@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Order #{{ order.order_id }}{% endblock %}
+
+{% block breadcrumb %}
+  <a href="{{ url_for('orders.index') }}">Orders</a> › <strong>#{{ order.order_id }}</strong>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>Order #{{ order.order_id }}</h1>
+    <p>{{ order.order_date.strftime('%A, %d %B %Y') if order.order_date else '' }}</p>
+  </div>
+  <div>
+    {% if order.order_status == 'Completed' %}
+      <span class="badge badge-success" style="font-size:14px; padding:6px 14px;">✓ Completed</span>
+    {% else %}
+      <span class="badge badge-warning" style="font-size:14px; padding:6px 14px;">{{ order.order_status }}</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Order Items -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Items Ordered</span>
+      <span class="text-muted">{{ items|length }} item{{ 's' if items|length != 1 else '' }}</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th class="text-right">Unit Price</th>
+            <th class="text-right">Qty</th>
+            <th class="text-right">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for oi, p in items %}
+          <tr>
+            <td><strong>{{ p.product_name }}</strong></td>
+            <td><span class="badge badge-neutral">{{ p.category or '—' }}</span></td>
+            <td class="text-right mono">₹{{ "%.2f"|format(p.price) }}</td>
+            <td class="text-right mono">{{ oi.quantity }}</td>
+            <td class="text-right mono fw-bold">₹{{ "%.2f"|format(p.price * oi.quantity) }}</td>
+          </tr>
+          {% endfor %}
+          <tr style="background:var(--slate-50);">
+            <td colspan="4" class="text-right fw-bold">Total</td>
+            <td class="text-right mono fw-bold" style="font-size:16px; color:var(--navy-800);">
+              ₹{{ "%.2f"|format(order.total_amount) }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Order Info -->
+  <div style="display:flex; flex-direction:column; gap:16px;">
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Payment Details</span></div>
+      <div class="card-body">
+        {% if payment %}
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <div class="text-muted" style="margin-bottom:2px;">Amount</div>
+              <div class="mono fw-bold" style="font-size:18px;">₹{{ "%.2f"|format(payment.amount) }}</div>
+            </div>
+            <div>
+              <div class="text-muted" style="margin-bottom:2px;">Mode</div>
+              <span class="badge badge-navy" style="font-size:13px; padding:4px 12px;">
+                {{ payment.payment_mode }}
+              </span>
+            </div>
+            <div>
+              <div class="text-muted" style="margin-bottom:2px;">Date</div>
+              <div>{{ payment.payment_date.strftime('%d %b %Y') if payment.payment_date else '—' }}</div>
+            </div>
+            <div>
+              <div class="text-muted" style="margin-bottom:2px;">Payment ID</div>
+              <div class="mono">#{{ payment.payment_id }}</div>
+            </div>
+          </div>
+        {% else %}
+          <div class="text-muted">No payment recorded</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Customer</span></div>
+      <div class="card-body">
+        {% if order.customer %}
+          <div class="fw-bold">{{ order.customer.name }}</div>
+          <div class="text-muted">{{ order.customer.email or '—' }}</div>
+          <div class="text-muted">{{ order.customer.city or '—' }}</div>
+        {% else %}
+          <div class="text-muted">Walk-in customer (no account)</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div>
+      <a href="{{ url_for('orders.index') }}" class="btn btn-outline">← Back to Orders</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

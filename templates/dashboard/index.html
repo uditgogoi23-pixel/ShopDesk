@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block breadcrumb %}
+  <strong>Dashboard</strong>
+{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('sales.index') }}" class="btn btn-amber btn-sm">
+    <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+    New Sale
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── PAGE HEADER ──────────────────────────────────────────────────────── -->
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>Business Overview</h1>
+    <p>Live metrics and performance snapshot</p>
+  </div>
+</div>
+
+<!-- ── KPI CARDS ────────────────────────────────────────────────────────── -->
+<div class="kpi-grid">
+
+  <div class="kpi-card" style="--kpi-accent: #f59e0b;">
+    <div class="kpi-label">Today's Revenue</div>
+    <div class="kpi-value">₹{{ "%.0f"|format(today_rev) }}</div>
+    <div class="kpi-sub">{{ today_orders }} order{{ 's' if today_orders != 1 else '' }} today</div>
+  </div>
+
+  <div class="kpi-card" style="--kpi-accent: #3b82f6;">
+    <div class="kpi-label">Monthly Revenue</div>
+    <div class="kpi-value">₹{{ "%.0f"|format(month_rev) }}</div>
+    <div class="kpi-sub">
+      {% if revenue_growth >= 0 %}
+        <span class="kpi-badge up">▲ {{ revenue_growth }}% vs last month</span>
+      {% else %}
+        <span class="kpi-badge down">▼ {{ revenue_growth|abs }}% vs last month</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="kpi-card" style="--kpi-accent: #10b981;">
+    <div class="kpi-label">Total Products</div>
+    <div class="kpi-value">{{ total_products }}</div>
+    <div class="kpi-sub">SKUs in catalogue</div>
+  </div>
+
+  <div class="kpi-card" style="--kpi-accent: #ef4444;">
+    <div class="kpi-label">Low Stock Alerts</div>
+    <div class="kpi-value">{{ low_stock|length }}</div>
+    <div class="kpi-sub">Products with ≤10 units</div>
+  </div>
+
+  <div class="kpi-card" style="--kpi-accent: #8b5cf6;">
+    <div class="kpi-label">Inventory Value</div>
+    <div class="kpi-value">₹{{ "%.0f"|format(inv_value) }}</div>
+    <div class="kpi-sub">Current stock × price</div>
+  </div>
+
+</div>
+
+<!-- ── GRID: Chart + Top Products ───────────────────────────────────────── -->
+<div class="grid-2 mb-24">
+
+  <!-- Monthly Revenue Chart -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Monthly Revenue Trend</span>
+      <span class="text-muted">Last 6 months</span>
+    </div>
+    <div class="card-body">
+      <div class="chart-container">
+        <canvas id="revenueChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Selling Products -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Top Sellers (Last 30 Days)</span>
+      <a href="{{ url_for('analytics.index') }}" class="btn btn-outline btn-sm">Full Report</a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      {% if top_products %}
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product</th>
+              <th class="text-right">Units</th>
+              <th class="text-right">Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in top_products %}
+            <tr>
+              <td class="text-muted">{{ loop.index }}</td>
+              <td>
+                <div style="font-weight:600;">{{ p.product_name }}</div>
+                <div class="text-muted">{{ p.category }}</div>
+              </td>
+              <td class="text-right mono">{{ p.units_sold }}</td>
+              <td class="text-right mono fw-bold">₹{{ "%.0f"|format(p.revenue) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty-state">
+          <h3>No Sales Yet</h3>
+          <p>Complete a sale to see top sellers</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- ── GRID: Low Stock + Recent Orders ──────────────────────────────────── -->
+<div class="grid-2">
+
+  <!-- Low Stock Alerts -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">⚠ Low Stock Alerts</span>
+      <a href="{{ url_for('products.index') }}?sort=stock_asc" class="btn btn-outline btn-sm">View All</a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      {% if low_stock %}
+        <table>
+          <thead>
+            <tr><th>Product</th><th>Category</th><th class="text-right">Stock</th></tr>
+          </thead>
+          <tbody>
+            {% for p in low_stock[:8] %}
+            <tr>
+              <td>{{ p.product_name }}</td>
+              <td><span class="badge badge-neutral">{{ p.category or '—' }}</span></td>
+              <td class="text-right">
+                {% if p.stock == 0 %}
+                  <span class="badge badge-danger">Out of Stock</span>
+                {% elif p.stock <= 5 %}
+                  <span class="badge badge-danger">{{ p.stock }}</span>
+                {% else %}
+                  <span class="badge badge-warning">{{ p.stock }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty-state">
+          <h3>All stocked up</h3>
+          <p>No products below threshold</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent Orders -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Recent Orders</span>
+      <a href="{{ url_for('orders.index') }}" class="btn btn-outline btn-sm">All Orders</a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      {% if recent_orders %}
+        <table>
+          <thead>
+            <tr><th>Order #</th><th>Date</th><th>Status</th><th class="text-right">Total</th></tr>
+          </thead>
+          <tbody>
+            {% for o in recent_orders %}
+            <tr>
+              <td>
+                <a href="{{ url_for('orders.detail', order_id=o.order_id) }}"
+                   style="color:var(--navy-700); font-weight:600;">
+                  #{{ o.order_id }}
+                </a>
+              </td>
+              <td class="text-muted">{{ o.order_date.strftime('%d %b') if o.order_date else '—' }}</td>
+              <td><span class="badge badge-success">{{ o.order_status }}</span></td>
+              <td class="text-right mono fw-bold">₹{{ "%.0f"|format(o.total_amount) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty-state">
+          <h3>No orders yet</h3>
+          <p><a href="{{ url_for('sales.index') }}" style="color:var(--navy-700);">Make your first sale →</a></p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function() {
+  const trend = {{ monthly_trend | tojson }};
+  if (!trend.length) return;
+
+  const labels = trend.map(r => r.month);
+  const values = trend.map(r => parseFloat(r.revenue));
+
+  const ctx = document.getElementById('revenueChart');
+  if (!ctx) return;
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Revenue (₹)',
+        data: values,
+        backgroundColor: 'rgba(30,51,112,.15)',
+        borderColor: '#1a2340',
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => '₹' + ctx.parsed.y.toLocaleString('en-IN')
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: '#f1f5f9' },
+          ticks: {
+            callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(1)+'k' : v)
+          }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

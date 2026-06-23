@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Refill</title>
+</head>
+<body>
+
+<h1>Stock Refill</h1>
+
+<h2>{{ product.product_name }}</h2>
+
+<p>
+Current Stock:
+<b>{{ product.stock }}</b>
+</p>
+
+<form method="POST">
+
+    <label>Quantity Received</label>
+    <br>
+    <input
+        type="number"
+        name="quantity"
+        required
+        min="1"
+    >
+
+    <br><br>
+
+    <label>Remarks</label>
+    <br>
+    <input
+        type="text"
+        name="remarks"
+        placeholder="Weekly Purchase"
+    >
+
+    <br><br>
+
+    <button type="submit">
+        Update Stock
+    </button>
+
+</form>
+
+<br>
+
+<a href="{{ url_for('products.index') }}">
+Back to Products
+</a>
+
+</body>
+</html>

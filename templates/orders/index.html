@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Order History{% endblock %}
+
+{% block breadcrumb %}
+  <strong>Order History</strong>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1>Order History</h1>
+    <p>All completed and processed sales</p>
+  </div>
+</div>
+
+<!-- Filter bar -->
+<form method="GET" class="filter-bar">
+  <select name="period" class="form-control">
+    <option value="all"   {{ 'selected' if period=='all' }}>All Time</option>
+    <option value="today" {{ 'selected' if period=='today' }}>Today</option>
+    <option value="week"  {{ 'selected' if period=='week' }}>Last 7 Days</option>
+    <option value="month" {{ 'selected' if period=='month' }}>Last 30 Days</option>
+  </select>
+  <select name="status" class="form-control">
+    <option value="">All Statuses</option>
+    <option value="Completed" {{ 'selected' if status=='Completed' }}>Completed</option>
+    <option value="Pending"   {{ 'selected' if status=='Pending' }}>Pending</option>
+    <option value="Cancelled" {{ 'selected' if status=='Cancelled' }}>Cancelled</option>
+  </select>
+  <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+  <a href="{{ url_for('orders.index') }}" class="btn btn-outline btn-sm">Reset</a>
+</form>
+
+{% if orders %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Order #</th>
+        <th>Date</th>
+        <th>Customer</th>
+        <th>Status</th>
+        <th>Payment</th>
+        <th class="text-right">Total</th>
+        <th class="text-center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr>
+        <td class="mono fw-bold">#{{ o.order_id }}</td>
+        <td>{{ o.order_date.strftime('%d %b %Y') if o.order_date else '—' }}</td>
+        <td>
+          {% if o.customer %}
+            {{ o.customer.name }}
+          {% else %}
+            <span class="text-muted">Walk-in</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if o.order_status == 'Completed' %}
+            <span class="badge badge-success">Completed</span>
+          {% elif o.order_status == 'Pending' %}
+            <span class="badge badge-warning">Pending</span>
+          {% else %}
+            <span class="badge badge-danger">{{ o.order_status }}</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if o.payments %}
+            <span class="badge badge-neutral">{{ o.payments[0].payment_mode }}</span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td class="text-right mono fw-bold">₹{{ "%.2f"|format(o.total_amount) }}</td>
+        <td class="text-center">
+          <a href="{{ url_for('orders.detail', order_id=o.order_id) }}"
+             class="btn btn-outline btn-sm">View</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<div class="pagination">
+  {% if pagination.has_prev %}
+    <a href="{{ url_for('orders.index', page=pagination.prev_num, period=period, status=status) }}"
+       class="page-link">← Prev</a>
+  {% endif %}
+  {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+    {% if p %}
+      <a href="{{ url_for('orders.index', page=p, period=period, status=status) }}"
+         class="page-link {{ 'active' if p == pagination.page }}">{{ p }}</a>
+    {% else %}
+      <span class="page-link" style="opacity:.4;">…</span>
+    {% endif %}
+  {% endfor %}
+  {% if pagination.has_next %}
+    <a href="{{ url_for('orders.index', page=pagination.next_num, period=period, status=status) }}"
+       class="page-link">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+  <div class="card">
+    <div class="empty-state">
+      <h3>No orders found</h3>
+      <p><a href="{{ url_for('sales.index') }}" style="color:var(--navy-700);">Start a new sale →</a></p>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}

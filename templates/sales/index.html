@@ -1,0 +1,340 @@
+{% extends 'base.html' %}
+{% block title %}New Sale{% endblock %}
+
+{% block breadcrumb %}
+  <strong>New Sale — POS</strong>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .pos-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+    height: calc(100vh - 120px);
+  }
+  .pos-left   { overflow-y: auto; }
+  .pos-right  {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 70px;
+    height: fit-content;
+    max-height: calc(100vh - 110px);
+  }
+  .cart-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--slate-100);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .cart-title { font-weight: 700; font-size: 15px; }
+  .cart-count {
+    background: var(--amber-400); color: var(--navy-950);
+    border-radius: 99px; padding: 1px 8px; font-size: 12px; font-weight: 700;
+  }
+  .cart-items { flex: 1; overflow-y: auto; padding: 10px 16px; }
+  .cart-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--slate-100);
+  }
+  .cart-totals { margin-bottom: 12px; }
+  .cart-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; padding: 3px 0;
+    color: var(--slate-600);
+  }
+  .cart-row.total {
+    font-size: 18px; font-weight: 700;
+    color: var(--slate-800);
+    border-top: 1px solid var(--slate-200);
+    margin-top: 6px; padding-top: 8px;
+    font-family: var(--font-mono);
+  }
+  .cat-tabs {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .cat-tab {
+    padding: 5px 12px; border-radius: 99px;
+    font-size: 12px; font-weight: 600;
+    background: var(--white); border: 1px solid var(--slate-300);
+    color: var(--slate-600); cursor: pointer; transition: all .15s;
+  }
+  .cat-tab:hover, .cat-tab.active {
+    background: var(--navy-800); color: var(--white); border-color: var(--navy-800);
+  }
+  .pos-search {
+    margin-bottom: 16px;
+  }
+  @media (max-width: 800px) {
+    .pos-layout { grid-template-columns: 1fr; }
+    .pos-right { position: static; max-height: none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pos-layout">
+
+  <!-- ── LEFT: PRODUCT GRID ────────────────────────────────────────────── -->
+  <div class="pos-left">
+
+    <div class="pos-search">
+      <input type="text" id="productSearch" class="form-control"
+             placeholder="Search products by name…" oninput="filterProducts()">
+    </div>
+
+    <div class="cat-tabs" id="catTabs">
+      <button class="cat-tab active" onclick="filterByCategory('', this)">All</button>
+      {% for cat in categories %}
+        <button class="cat-tab" onclick="filterByCategory('{{ cat }}', this)">{{ cat }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="product-grid" id="productGrid">
+      {% for p in products %}
+        <div class="product-card {{ 'low-s' if p.stock <= 10 else '' }}"
+             data-id="{{ p.product_id }}"
+             data-name="{{ p.product_name }}"
+             data-price="{{ p.price }}"
+             data-stock="{{ p.stock }}"
+             data-category="{{ p.category or '' }}"
+             onclick="addToCart({{ p.product_id }}, '{{ p.product_name|e }}', {{ p.price }}, {{ p.stock }})">
+          <div class="pcard-category">{{ p.category or 'General' }}</div>
+          <div class="pcard-name">{{ p.product_name }}</div>
+          <div class="pcard-price">₹{{ "%.2f"|format(p.price) }}</div>
+          <div class="pcard-stock">{{ p.stock }} in stock</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if not products %}
+      <div class="empty-state">
+        <h3>No products available</h3>
+        <p><a href="{{ url_for('products.add') }}" style="color:var(--navy-700);">Add products to start selling →</a></p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- ── RIGHT: CART ───────────────────────────────────────────────────── -->
+  <div class="pos-right">
+    <div class="cart-header">
+      <span class="cart-title">Cart</span>
+      <div class="d-flex align-center gap-10">
+        <span class="cart-count" id="cartCount">0</span>
+        <button class="btn btn-outline btn-sm" onclick="clearCart()">Clear</button>
+      </div>
+    </div>
+
+    <div class="cart-items" id="cartItems">
+      <div class="empty-state" id="cartEmpty">
+        <h3>Cart is empty</h3>
+        <p>Click a product to add it</p>
+      </div>
+    </div>
+
+    <div class="cart-footer">
+      <div class="cart-totals">
+        <div class="cart-row">
+          <span>Subtotal</span>
+          <span id="cartSubtotal">₹0.00</span>
+        </div>
+        <div class="cart-row total">
+          <span>Total</span>
+          <span id="cartTotal">₹0.00</span>
+        </div>
+      </div>
+
+      <div class="form-group mb-0" style="margin-bottom:12px;">
+        <label class="form-label">Payment Mode</label>
+        <select id="paymentMode" class="form-control">
+          {% for mode in payment_modes %}
+            <option value="{{ mode }}">{{ mode }}</option>
+          {% endfor %}
+        </select>
+      </div>
+        <div class="form-group">
+            <label>Customer Phone</label>
+            <input
+            type="text"
+             id="customerPhone"
+           class="form-control"
+        placeholder="Enter phone number (optional)"
+    >
+</div>
+      <button class="btn btn-amber btn-lg" style="width:100%;"
+              onclick="completeSale()" id="btnCompleteSale" disabled>
+        Complete Sale
+      </button>
+
+      <div id="saleMessage" style="margin-top:10px; font-size:13px; text-align:center;"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ── CART STATE ──────────────────────────────────────────────────────── */
+let cart = {};   // { product_id: { name, price, qty, stock } }
+
+function addToCart(id, name, price, stock) {
+  if (cart[id]) {
+    if (cart[id].qty >= stock) {
+      showMsg('⚠ Max stock reached for ' + name, 'warning');
+      return;
+    }
+    cart[id].qty++;
+  } else {
+    cart[id] = { name, price, qty: 1, stock };
+  }
+  renderCart();
+}
+
+function changeQty(id, delta) {
+  if (!cart[id]) return;
+  cart[id].qty += delta;
+  if (cart[id].qty <= 0) delete cart[id];
+  else if (cart[id].qty > cart[id].stock) cart[id].qty = cart[id].stock;
+  renderCart();
+}
+
+function removeItem(id) {
+  delete cart[id];
+  renderCart();
+}
+
+function clearCart() {
+  cart = {};
+  renderCart();
+}
+
+/* ── RENDER CART ─────────────────────────────────────────────────────── */
+function renderCart() {
+  const container = document.getElementById('cartItems');
+  const empty     = document.getElementById('cartEmpty');
+  const ids       = Object.keys(cart);
+
+  if (ids.length === 0) {
+container.innerHTML =
+'<div class="empty-state" id="cartEmpty">' +
+'<h3>Cart is empty</h3>' +
+'<p>Click a product to add it</p>' +
+'</div>';
+
+    document.getElementById('cartCount').textContent = '0';
+    document.getElementById('cartSubtotal').textContent = '₹0.00';
+    document.getElementById('cartTotal').textContent = '₹0.00';
+    document.getElementById('btnCompleteSale').disabled = true;
+    return;
+}
+
+  if (empty && empty.parentElement) {
+    empty.remove();
+  }
+
+  let html   = '';
+  let total  = 0;
+  let items  = 0;
+
+  for (const id of ids) {
+    const item     = cart[id];
+    const subtotal = item.price * item.qty;
+    total += subtotal;
+    items += item.qty;
+
+    html += `
+      <div class="cart-item">
+        <div style="flex:1;">
+          <div class="cart-item-name">${item.name}</div>
+          <div class="cart-item-price">₹${item.price.toFixed(2)} each</div>
+        </div>
+        <div class="qty-controls">
+          <button class="qty-btn" onclick="changeQty(${id}, -1)">−</button>
+          <span class="qty-display">${item.qty}</span>
+          <button class="qty-btn" onclick="changeQty(${id}, 1)">+</button>
+        </div>
+        <div class="cart-item-total">₹${subtotal.toFixed(2)}</div>
+        <span class="cart-remove" onclick="removeItem(${id})" title="Remove">×</span>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+  document.getElementById('cartCount').textContent    = items;
+  document.getElementById('cartSubtotal').textContent = '₹' + total.toFixed(2);
+  document.getElementById('cartTotal').textContent    = '₹' + total.toFixed(2);
+  document.getElementById('btnCompleteSale').disabled = false;
+}
+
+/* ── COMPLETE SALE ───────────────────────────────────────────────────── */
+async function completeSale() {
+  const ids  = Object.keys(cart);
+  if (!ids.length) return;
+
+  const cartArr   = ids.map(id => ({ product_id: parseInt(id), quantity: cart[id].qty }));
+  const payMode   = document.getElementById('paymentMode').value;
+  const btn       = document.getElementById('btnCompleteSale');
+
+  btn.disabled   = true;
+  btn.textContent = 'Processing…';
+
+  try {
+    const res  = await fetch('/sales/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cart: cartArr, payment_mode: payMode }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showMsg('✓ Sale #' + data.order_id + ' completed! Total: ₹' + data.total.toFixed(2), 'success');
+      clearCart();
+     // Stock will update after page refresh
+     window.location.reload();
+    } 
+    else {
+      showMsg('✗ ' + data.message, 'error');
+    }
+  } catch (err) {
+    console.log("ERROR:", err);
+    alert("ERROR: " + err);
+    showMsg('Network error. Please try again.', 'error');
+ }
+  btn.disabled    = false;
+  btn.textContent = 'Complete Sale';
+}
+
+/* ── FILTER ──────────────────────────────────────────────────────────── */
+let activeCategory = '';
+
+function filterByCategory(cat, btn) {
+  activeCategory = cat;
+  document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterProducts();
+}
+
+function filterProducts() {
+  const search = document.getElementById('productSearch').value.toLowerCase();
+  document.querySelectorAll('.product-card').forEach(card => {
+    const name = card.dataset.name.toLowerCase();
+    const cat  = card.dataset.category;
+    const matchSearch = !search || name.includes(search);
+    const matchCat    = !activeCategory || cat === activeCategory;
+    card.style.display = matchSearch && matchCat ? '' : 'none';
+  });
+}
+
+/* ── MESSAGES ────────────────────────────────────────────────────────── */
+function showMsg(text, type) {
+  const el = document.getElementById('saleMessage');
+  el.textContent = text;
+  el.style.color = type === 'success' ? 'var(--success)' :
+                   type === 'warning' ? 'var(--warning)' : 'var(--danger)';
+  setTimeout(() => { el.textContent = ''; }, 5000);
+}
+</script>
+{% endblock %}
