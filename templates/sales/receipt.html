@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Receipt{% endblock %}
+
+{% block content %}
+
+<div class="card">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <h2>🧾 ShopDesk Receipt</h2>
+            <p>Order #{{ order.order_id }}</p>
+            <div><strong>Invoice:</strong> {{ order.invoice_no }}</div>
+            <p>Date: {{ order.order_date }}</p>
+        </div>
+
+        <button onclick="window.print()" class="btn btn-primary">
+            Print Receipt
+        </button>
+    </div>
+
+    <hr>
+
+    <h3>Customer Details</h3>
+
+    {% if order.customer %}
+        <p><strong>Name:</strong> {{ order.customer.name }}</p>
+        <p><strong>Phone:</strong> {{ order.customer.phone }}</p>
+    {% else %}
+        <p>Walk-in Customer</p>
+    {% endif %}
+
+    <hr>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+        {% for item in items %}
+        <tr>
+            <td>{{ item.product.product_name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>₹{{ item.product.price }}</td>
+            <td>₹{{ item.quantity * item.product.price }}</td>
+        </tr>
+        {% endfor %}
+
+        </tbody>
+    </table>
+
+    <hr>
+
+    <div style="margin-top:20px; text-align:right;">
+
+        <p><strong>Subtotal:</strong> ₹{{ order.total_amount }}</p>
+
+        <p><strong>Discount:</strong> ₹{{ order.discount }}</p>
+
+        <p><strong>GST (18%):</strong> ₹{{ order.gst_amount }}</p>
+
+        <hr>
+
+        <h2><strong>Grand Total:</strong> ₹{{ order.grand_total }}</h2>
+
+    </div>
+
+    {% if payment %}
+    <p>
+        <strong>Payment Mode:</strong>
+        {{ payment.payment_mode }}
+    </p>
+    {% endif %}
+
+</div>
+
+{% endblock %}

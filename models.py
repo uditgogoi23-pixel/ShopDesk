@@ -54,9 +54,13 @@ class Order(db.Model):
     __tablename__ = 'orders'
 
     order_id     = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    invoice_no = db.Column(db.String(20), unique=True)
     customer_id  = db.Column(db.Integer, db.ForeignKey('customers.customer_id'), nullable=True)
     order_date   = db.Column(db.Date, default=date.today)
     total_amount = db.Column(db.Numeric(10, 2), nullable=True)
+    discount = db.Column(db.Numeric(10,2), default=0)
+    gst_amount = db.Column(db.Numeric(10,2), default=0)
+    grand_total = db.Column(db.Numeric(10,2), default=0)
     payment_mode = db.Column(db.String(30), nullable=True)
     order_status = db.Column(db.String(30), default='Completed')
 

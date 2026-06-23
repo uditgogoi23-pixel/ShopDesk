@@ -71,19 +71,31 @@ def complete_sale():
                                        f"Available: {product.stock}"}), 400
         total += float(product.price) * qty
         cart_items.append({'product': product, 'quantity': qty})
+        discount = 0
+
+        taxable_amount = total - discount
+        gst_amount = round(taxable_amount * 0.18, 2)
+        grand_total = taxable_amount + gst_amount
 
     try:
         # ── 1. Create Order ─────────────────────────────────────────────────
         order = Order(
             customer_id=customer_id,
+            invoice_no="TEMP",
             order_date=date.today(),
             total_amount=total,
+            discount=discount,
+            gst_amount=gst_amount,
+            grand_total=grand_total,
             payment_mode=payment_mode,
             order_status='Completed',
         )
+    
         db.session.add(order)
         db.session.flush()   # get order.order_id before committing
+        order.invoice_no = f"INV-{order.order_id:05d}"
 
+        
         # ── 2. Create Order Items + Deduct Stock ────────────────────────────
         for entry in cart_items:
             prod = entry['product']

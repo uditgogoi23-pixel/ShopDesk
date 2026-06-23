@@ -292,8 +292,9 @@ async function completeSale() {
     if (data.success) {
       showMsg('✓ Sale #' + data.order_id + ' completed! Total: ₹' + data.total.toFixed(2), 'success');
       clearCart();
-     // Stock will update after page refresh
-     window.location.reload();
+
+      // Open receipt page
+       window.location.href = '/sales/receipt/' + data.order_id;
     } 
     else {
       showMsg('✗ ' + data.message, 'error');
