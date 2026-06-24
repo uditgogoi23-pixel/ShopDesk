@@ -27,13 +27,31 @@ def index():
         payment_modes=PAYMENT_MODES,
     )
 
+@sales_bp.route('/customer/<phone>')
+def get_customer(phone):
 
+    customer = Customer.query.filter_by(
+        phone=phone
+    ).first()
+
+    if customer:
+
+        return jsonify({
+            'exists': True,
+            'customer_id': customer.customer_id,
+            'name': customer.name
+        })
+
+    return jsonify({
+        'exists': False
+    })
 # ─── COMPLETE SALE (AJAX) ─────────────────────────────────────────────────────
 @sales_bp.route('/complete', methods=['POST'])
 def complete_sale():
     data         = request.get_json()
+    discount_percent = float(data.get('discount', 0))
     phone = data.get('customer_phone', '').strip()
-    print("DEBUG DATA:", data)
+    customer_name = data.get('customer_name', '').strip()
     cart         = data.get('cart', [])           # [{product_id, quantity}, ...]
     payment_mode = data.get('payment_mode', 'Cash')
     customer = None
@@ -42,9 +60,9 @@ def complete_sale():
         customer = Customer.query.filter_by(phone=phone).first()
         if not customer:
             customer = Customer(
-                name=f"Customer-{phone[-4:]}",
-                phone=phone
-            )
+        name=customer_name or f"Customer-{phone[-4:]}",
+        phone=phone
+    )
             db.session.add(customer)
             db.session.flush()
         customer_id = customer.customer_id
@@ -71,7 +89,7 @@ def complete_sale():
                                        f"Available: {product.stock}"}), 400
         total += float(product.price) * qty
         cart_items.append({'product': product, 'quantity': qty})
-        discount = 0
+        discount = round(total * (discount_percent / 100), 2)
 
         taxable_amount = total - discount
         gst_amount = round(taxable_amount * 0.18, 2)

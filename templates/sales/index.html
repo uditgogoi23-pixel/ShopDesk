@@ -157,14 +157,48 @@
         </select>
       </div>
         <div class="form-group">
-            <label>Customer Phone</label>
-            <input
+
+    <div class="form-check mb-2">
+        <input
+            class="form-check-input"
+            type="checkbox"
+            id="walkInCustomer"
+            checked>
+
+        <label class="form-check-label">
+            Walk-in Customer
+        </label>
+    </div>
+
+    
+    <label>Customer Name</label>
+        <input
             type="text"
-             id="customerPhone"
+            id="customerName"
+            class="form-control"
+            placeholder="Enter customer name">
+
+        <label>Customer Phone</label>
+        <input
+            type="tel"
+            id="customerPhone"
            class="form-control"
-        placeholder="Enter phone number (optional)"
-    >
+            placeholder="Enter 10 digit phone"
+            maxlength="10">
+
+    <div id="customerStatus"></div>
+    
+
 </div>
+    <div class="form-group" style="margin-bottom:10px;">
+      <label>Discount (%)</label>
+      <input type="number"
+           id="discount"
+           class="form-control"
+           value="0"
+           min="0"
+           max="100">
+    </div>
       <button class="btn btn-amber btn-lg" style="width:100%;"
               onclick="completeSale()" id="btnCompleteSale" disabled>
         Complete Sale
@@ -269,24 +303,139 @@ container.innerHTML =
   document.getElementById('btnCompleteSale').disabled = false;
 }
 
+  const walkInCheckbox =
+    document.getElementById('walkInCustomer');
+
+  const phoneInput =
+    document.getElementById('customerPhone');
+
+  const nameInput =
+    document.getElementById('customerName');
+
+  
+walkInCheckbox.addEventListener('change', function () {
+
+    if (this.checked) {
+
+      phoneInput.value = '';
+      nameInput.value = '';
+
+      phoneInput.disabled = true;
+      nameInput.disabled = true;
+
+      nameInput.placeholder = 'Walk-in Customer';
+
+      document.getElementById('customerStatus').innerHTML = '';
+
+  } else {
+
+    phoneInput.disabled = false;
+    nameInput.disabled = false;
+
+    nameInput.placeholder = 'Enter customer name';
+
+  }
+});
+if (walkInCheckbox.checked) {
+    phoneInput.disabled = true;
+    nameInput.disabled = true;
+}
+
+
 /* ── COMPLETE SALE ───────────────────────────────────────────────────── */
+document.getElementById('customerPhone')
+.addEventListener('input', async function () {
+
+    this.value = this.value
+        .replace(/\D/g, '')
+        .slice(0, 10);
+
+    const phone = this.value;
+
+    if (phone.length !== 10) {
+
+        document.getElementById('customerStatus').innerHTML = '';
+        return;
+    }
+    console.log(
+    "NAME:",
+    document.getElementById('customerName').value
+);
+
+console.log(
+    "PHONE:",
+    phone
+);
+    const res = await fetch('/sales/customer/' + phone);
+    const data = await res.json();
+
+    if (data.exists) {
+        document.getElementById('customerName').value = data.name;
+        document.getElementById('customerName').readOnly = true;
+        document.getElementById('customerStatus').innerHTML = `
+            <div style="color:green;font-weight:bold;">
+                ✓ Existing Customer<br>
+                ID: ${data.customer_id}<br>
+                Name: ${data.name}
+            </div>
+        `;
+
+    } else {
+        
+        document.getElementById('customerName').readOnly = false;
+
+        document.getElementById('customerStatus').innerHTML = `
+            <div style="color:orange;font-weight:bold;">
+                New Customer
+            </div>
+        `;
+    }
+
+});
 async function completeSale() {
   const ids  = Object.keys(cart);
   if (!ids.length) return;
 
   const cartArr   = ids.map(id => ({ product_id: parseInt(id), quantity: cart[id].qty }));
   const payMode   = document.getElementById('paymentMode').value;
-  const btn       = document.getElementById('btnCompleteSale');
+  const phone =
+    document.getElementById('customerPhone').value.trim();
 
+  const walkIn =
+    document.getElementById('walkInCustomer').checked;
+  const btn       = document.getElementById('btnCompleteSale');
+if (!walkIn) {
+
+    if (!/^\d{10}$/.test(phone)) {
+
+        alert(
+            'Phone number must be exactly 10 digits'
+        );
+
+        return;
+    }
+  }
   btn.disabled   = true;
   btn.textContent = 'Processing…';
+  
+  
+
+  
 
   try {
     const res  = await fetch('/sales/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cart: cartArr, payment_mode: payMode }),
-    });
+      body: JSON.stringify({
+         cart: cartArr,
+         payment_mode: payMode,
+         discount: document.getElementById('discount').value,
+
+         customer_phone: walkIn ? '' : phone,
+         customer_name: walkIn ? '' :
+        document.getElementById('customerName').value.trim()
+})
+    }); 
     const data = await res.json();
 
     if (data.success) {

@@ -12,7 +12,7 @@ class Customer(db.Model):
 
     customer_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name        = db.Column(db.String(100), nullable=False)
-    phone = db.Column(db.String(20), unique=True, nullable=True)
+    phone = db.Column(db.String(10), unique=True, nullable=False)
     email       = db.Column(db.String(150), unique=True, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     # Relationships

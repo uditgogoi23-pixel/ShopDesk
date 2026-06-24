@@ -7,6 +7,7 @@ from flask import Flask
 from datetime import datetime
 from config import Config
 from extensions import db, migrate
+from routes.customers import customers_bp
 
 def create_app():
     app = Flask(__name__)
@@ -28,6 +29,7 @@ def create_app():
     from routes.orders import orders_bp
     from routes.dashboard import dashboard_bp
     from routes.analytics import analytics_bp
+    app.register_blueprint(customers_bp, url_prefix='/customers')
 
     app.register_blueprint(main_bp)
     app.register_blueprint(products_bp, url_prefix='/products')
