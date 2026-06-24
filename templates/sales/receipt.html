@@ -24,8 +24,8 @@
     <h3>Customer Details</h3>
 
     {% if order.customer %}
-        <p><strong>Name:</strong> {{ order.customer.name }}</p>
-        <p><strong>Phone:</strong> {{ order.customer.phone }}</p>
+        <p><strong>Name:</strong> {{ order.customer.name if order.customer else 'Walk-in Customer' }}</p>
+        <p><strong>Phone:</strong> {{ order.customer.phone if order.customer else '-' }}</p>
     {% else %}
         <p>Walk-in Customer</p>
     {% endif %}
@@ -48,8 +48,8 @@
         <tr>
             <td>{{ item.product.product_name }}</td>
             <td>{{ item.quantity }}</td>
-            <td>₹{{ item.product.price }}</td>
-            <td>₹{{ item.quantity * item.product.price }}</td>
+            <td>₹{{ "%.2f"|format(item.product.price) }}</td>
+            <td>₹{{ "%.2f"|format(item.quantity * item.product.price) }}</td>
         </tr>
         {% endfor %}
 
@@ -60,15 +60,15 @@
 
     <div style="margin-top:20px; text-align:right;">
 
-        <p><strong>Subtotal:</strong> ₹{{ order.total_amount }}</p>
+        <p><strong>Subtotal:</strong> ₹{{ "%.2f"|format(order.total_amount) }}</p>
 
-        <p><strong>Discount:</strong> ₹{{ order.discount }}</p>
+        <p><strong>Discount:</strong> ₹{{ "%.2f"|format(order.discount) }}</p>
 
-        <p><strong>GST (18%):</strong> ₹{{ order.gst_amount }}</p>
+        <p><strong>GST (18%):</strong> ₹{{ "%.2f"|format(order.gst_amount) }}</p>
 
         <hr>
 
-        <h2><strong>Grand Total:</strong> ₹{{ order.grand_total }}</h2>
+        <h2><strong>Grand Total:</strong> ₹{{ "%.2f"|format(order.grand_total) }}</h2>
 
     </div>
 

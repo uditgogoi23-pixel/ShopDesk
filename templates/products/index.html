@@ -41,6 +41,22 @@
   <button type="submit" class="btn btn-primary btn-sm">Filter</button>
   <a href="{{ url_for('products.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
+<div class="stats-grid" style="margin-bottom:20px;">
+
+    <div class="stat-card">
+        <h3>Inventory Value</h3>
+        <p>₹{{ "%.2f"|format(inventory_value) }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>⚠ Low Stock Products</h3>
+        <p>{{ low_stock_count }}</p>
+    </div>
+    <div class="stat-card">
+        <h3>Total Products</h3>
+        <p>{{ products|length }}</p>
+    </div>
+</div>
 
 <!-- ── PRODUCT TABLE ────────────────────────────────────────────────────── -->
 {% if products %}
@@ -52,7 +68,9 @@
         <th>Product Name</th>
         <th>Category</th>
         <th class="text-right">Price</th>
+        <th class="text-right">Stock Value</th>
         <th class="text-right">Stock</th>
+        <th class="text-center">Reorder Level</th>
         <th>Status</th>
         <th class="text-center">Actions</th>
       </tr>
@@ -69,19 +87,26 @@
             <span class="text-muted">—</span>
           {% endif %}
         </td>
-        <td class="text-right mono fw-bold">₹{{ "%.2f"|format(p.price) }}</td>
-        <td class="text-right mono">{{ p.stock }}</td>
-        <td>
-          {% if p.stock == 0 %}
-            <span class="badge badge-danger">Out of Stock</span>
-          {% elif p.stock <= 5 %}
-            <span class="badge badge-danger">Critical</span>
-          {% elif p.stock <= 10 %}
-            <span class="badge badge-warning">Low Stock</span>
-          {% else %}
-            <span class="badge badge-success">In Stock</span>
-          {% endif %}
+        <td class="text-right">₹{{ "%.2f"|format(p.price) }}</td>
+
+        <td class="text-right">
+            ₹{{ "%.2f"|format(p.stock * p.price) }}
         </td>
+
+<td class="text-right">{{ p.stock }}</td>
+<td class="text-center">{{ p.reorder_level }}</td>
+        <td>
+          {% if p.stock <= 0 %}
+        <span class="badge badge-danger">Out of Stock</span>
+
+          {% elif p.is_low_stock %}
+        <span class="badge badge-warning">Low Stock</span>
+
+          {% else %}
+        <span class="badge badge-success">In Stock</span>
+
+      {% endif %}
+      </td>   
         <td class="text-center">
           <div class="d-flex align-center gap-10" style="justify-content:center;">
             <a href="{{ url_for('products.edit', product_id=p.product_id) }}"

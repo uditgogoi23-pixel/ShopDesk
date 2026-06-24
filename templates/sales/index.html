@@ -81,14 +81,17 @@
   }
   .qty-modal-overlay.open { display: flex; }
 
-  .qty-modal {
+  .qty-modal{
     background: var(--white);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    width: 360px;
+    width: 480px;
     max-width: 95vw;
-    overflow: hidden;
-    animation: modalIn .15s ease;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: visible;   /* change from hidden */
   }
   @keyframes modalIn {
     from { transform: translateY(-12px) scale(.97); opacity: 0; }
@@ -114,7 +117,11 @@
   }
   .qty-modal-close:hover { color: var(--white); }
 
-  .qty-modal-body { padding: 20px; }
+  .qty-modal-body{
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+}
 
   /* Unit selector tabs */
   .unit-tabs {
@@ -147,35 +154,52 @@
   }
 
   /* Stepper row */
-  .qty-stepper {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
-  }
-  .qty-stepper-btn {
-    width: 40px; height: 40px; border-radius: 50%;
-    border: 2px solid var(--slate-300);
-    background: var(--white); color: var(--slate-700);
-    font-size: 20px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all .1s; flex-shrink: 0;
-  }
-  .qty-stepper-btn:hover {
-    background: var(--navy-800); color: var(--white); border-color: var(--navy-800);
-  }
-  .qty-stepper-input {
-    flex: 1;
-    padding: 10px 12px;
-    border: 2px solid var(--navy-600);
-    border-radius: var(--radius-sm);
-    font-size: 22px; font-weight: 700;
-    text-align: center;
-    font-family: var(--font-mono);
-    color: var(--slate-800);
-  }
-  .qty-stepper-input:focus { outline: none; border-color: var(--amber-400); }
-  .qty-unit-label {
-    font-size: 14px; font-weight: 600;
-    color: var(--slate-500); min-width: 36px;
-  }
+  /* Professional Quantity Selector */
+
+.qty-selector{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    margin-bottom:10px;
+}
+
+.qty-stepper-btn{
+    width:56px;
+    height:56px;
+    border:none;
+    border-radius:12px;
+    background:#f3f4f6;
+    font-size:28px;
+    font-weight:700;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.qty-stepper-btn:hover{
+    background:#1e2a57;
+    color:white;
+}
+
+.qty-stepper-input{
+    width:180px;
+    height:56px;
+    border:2px solid #f59e0b;
+    border-radius:12px;
+    text-align:center;
+    font-size:32px;
+    font-weight:700;
+    color:#1f2937;
+}
+
+.qty-stepper-input:focus{
+    outline:none;
+    border-color:#f59e0b;
+}
+
+.qty-unit-label{
+    display:none;
+}
 
   /* Line total */
   .qty-line-total {
@@ -183,16 +207,41 @@
     font-size: 13px; color: var(--slate-500);
     margin-bottom: 16px;
   }
-  .qty-line-total strong {
-    font-family: var(--font-mono);
-    font-size: 16px; color: var(--navy-800);
-  }
+  .qty-line-total strong{
+    font-size:20px;
+    color:var(--navy-800);
+}
 
-  .qty-modal-footer {
-    padding: 0 20px 20px;
-    display: flex; gap: 10px;
-  }
-  .qty-modal-footer .btn { flex: 1; }
+  .qty-modal-footer{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    padding:20px;
+}
+
+
+  .qty-modal-footer .btn {
+    width: 180px;
+    flex: none;
+}
+.qty-modal-footer .btn-outline{
+    background:white;
+    color:var(--navy-800);
+    border:2px solid var(--navy-800);
+}
+
+.qty-modal-footer .btn-outline:hover{
+    background:var(--navy-800);
+    color:white;
+}
+.qty-modal-footer .btn-amber{
+    transition: all 0.2s ease;
+}
+
+.qty-modal-footer .btn-amber:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
 
   /* Stock badge inside modal */
   .qty-stock-badge {
@@ -226,17 +275,17 @@
         <button class="cat-tab" onclick="filterByCategory('{{ cat }}', this)">{{ cat }}</button>
       {% endfor %}
     </div>
-
     <div class="product-grid" id="productGrid">
-      {% for p in products %}
-        <div class="product-card {{ 'low-s' if p.is_low_stock else '' }}"
-             data-id="{{ p.product_id }}"
-             data-name="{{ p.product_name }}"
-             data-price="{{ p.price }}"
-             data-stock="{{ p.stock }}"
-             data-unit="{{ p.unit_type }}"
-             data-category="{{ p.category or '' }}"
-             onclick="openQtyModal({{ p.product_id }}, '{{ p.product_name|e }}', {{ p.price }}, {{ p.stock }}, '{{ p.unit_type }}')">
+    {% for p in products %}
+
+    <div class="product-card {{ 'low-s' if p.is_low_stock else '' }}"
+        data-id="{{ p.product_id }}"
+        data-name="{{ p.product_name|lower }}"
+        data-price="{{ p.price }}"
+         data-stock="{{ p.stock }}"
+        data-unit="{{ p.unit_type }}"
+         data-category="{{ (p.category or '')|lower }}"
+        onclick="openQtyModal({{ p.product_id }}, '{{ p.product_name|e }}', {{ p.price }}, {{ p.stock }}, '{{ p.unit_type }}')">
           <div class="pcard-category">{{ p.category or 'General' }}</div>
           <div class="pcard-name">{{ p.product_name }}</div>
           <div class="pcard-price">₹{{ "%.2f"|format(p.price) }}</div>
@@ -358,19 +407,36 @@
       <div class="qty-presets" id="qtyPresets"></div>
 
       <!-- Stepper -->
-      <div class="qty-stepper">
-        <button class="qty-stepper-btn" onclick="stepQty(-1)">−</button>
-        <input  class="qty-stepper-input" type="number" id="qtyInput"
-                value="1" min="0.001" step="0.001" oninput="updateLineTotal()">
-        <span   class="qty-unit-label" id="stepperUnitLabel">units</span>
-        <button class="qty-stepper-btn" onclick="stepQty(1)">+</button>
+      <div class="qty-selector">
+
+    <button class="qty-stepper-btn" onclick="stepQty(-1)">−</button>
+
+    <input
+        class="qty-stepper-input"
+        type="number"
+        id="qtyInput"
+        value="1"
+        min="0.001"
+        step="0.001"
+        oninput="updateLineTotal()">
+
+    <button class="qty-stepper-btn" onclick="stepQty(1)">+</button>
+
+</div>
+
+<div style="margin-top:8px;text-align:center;">
+    <small>
+        Manual entry allowed for custom quantities
+        (e.g. 100g, 250g, 350ml)
+    </small>
+</div>
       </div>
 
       <!-- Running line total -->
       <div class="qty-line-total">
         Line total: <strong id="modalLineTotal">₹0.00</strong>
       </div>
-    </div>
+    
 
     <!-- Footer buttons -->
     <div class="qty-modal-footer">
@@ -614,10 +680,53 @@ function stepQty(direction) {
 }
 
 function updateStepperUnitLabel() {
-  document.getElementById('stepperUnitLabel').textContent = modal.active_unit;
-  document.getElementById('modalUnitLabel').textContent   = modal.active_unit;
-}
+    const stepperLabel = document.getElementById('stepperUnitLabel');
+    if (stepperLabel) {
+        stepperLabel.textContent = modal.active_unit;
+    }
 
+    const modalLabel = document.getElementById('modalUnitLabel');
+    if (modalLabel) {
+        modalLabel.textContent = modal.active_unit;
+    }
+}
+function changeQty(direction) {
+
+    const input = document.getElementById('qtyInput');
+    let qty = parseFloat(input.value) || 0;
+
+    let step = 1;
+
+    if (modal.active_unit === 'kg') {
+        step = 0.25;     // 250g
+    }
+    else if (modal.active_unit === 'litre') {
+        step = 0.25;     // 250ml
+    }
+    else if (modal.active_unit === 'g') {
+        step = 50;
+    }
+    else if (modal.active_unit === 'ml') {
+        step = 50;
+    }
+    else {
+        step = 1;
+    }
+
+    qty = qty + (direction * step);
+
+    if (qty < step) {
+        qty = step;
+    }
+
+    input.value = qty.toFixed(
+        (modal.active_unit === 'kg' || modal.active_unit === 'litre')
+        ? 3
+        : 0
+    );
+
+    updateLineTotal();
+}
 
 /* ── LINE TOTAL ──────────────────────────────────────────────────────────────
    Real-time price × qty as cashier types

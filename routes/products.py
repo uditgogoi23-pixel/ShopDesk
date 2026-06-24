@@ -47,15 +47,20 @@ def index():
     products  = query.all()
     # Use per-product reorder_level instead of hardcoded 10
     low_stock = [p for p in products if p.is_low_stock]
-
+    inventory_value = sum(
+    float(p.stock) * float(p.cost_price or 0)
+    for p in products
+    )
     return render_template(
         'products/index.html',
         products=products,
         low_stock=low_stock,
         categories=CATEGORIES,
+        inventory_value=inventory_value,
         search=search,
         selected_category=category,
         sort=sort,
+        low_stock_count=len(low_stock),
     )
 
 
@@ -152,6 +157,9 @@ def refill_stock(product_id):
     if request.method == 'POST':
         quantity       = float(request.form.get('quantity', 0))
         remarks        = request.form.get('remarks', '')
+        supplier_name = request.form.get('supplier_name', '')
+        invoice_no = request.form.get('invoice_no', '')
+        purchase_price = float(request.form.get('purchase_price') or 0)
         previous_stock = float(product.stock)
         new_stock      = previous_stock + quantity
 
@@ -163,6 +171,9 @@ def refill_stock(product_id):
             previous_stock = previous_stock,
             new_stock      = new_stock,
             remarks        = remarks,
+            supplier_name=supplier_name,
+            invoice_no=invoice_no,
+            purchase_price=purchase_price,
         )
         db.session.add(entry)
         db.session.commit()
@@ -171,3 +182,40 @@ def refill_stock(product_id):
         return redirect(url_for('products.index'))
 
     return render_template('products/refill.html', product=product)
+# ==========================================
+# PURCHASE HISTORY
+# ==========================================
+
+@products_bp.route('/purchase-history')
+def purchase_history():
+    print("PURCHASE HISTORY ROUTE RUNNING")
+    entries = StockEntry.query.order_by(
+        StockEntry.entry_date.desc()
+    ).all()
+
+    purchase_value = sum(
+        float(e.quantity_added) * float(e.purchase_price)
+        for e in entries
+    )
+    print("PURCHASE VALUE =", purchase_value)
+
+    total_quantity = sum(
+        float(e.quantity_added)
+        for e in entries
+    )
+
+    supplier_count = len(
+        set(
+            e.supplier_name
+            for e in entries
+            if e.supplier_name
+        )
+    )
+
+    return render_template(
+        'products/purchase_history.html',
+        entries=entries,
+        purchase_value=purchase_value,
+        total_quantity=total_quantity,
+        supplier_count=supplier_count
+    )

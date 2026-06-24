@@ -260,7 +260,63 @@
   </div>
 
 </div>
+<div class="grid-2 analytics-section">
 
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🏆 Most Profitable Products</span>
+        </div>
+
+        <div class="card-body" style="padding:0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th class="text-right">Profit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for p in most_profitable %}
+                    <tr>
+                        <td>{{ p.product_name }}</td>
+                        <td class="text-right mono">
+                            ₹{{ "%.0f"|format(p.profit) }}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📉 Least Profitable Products</span>
+        </div>
+
+        <div class="card-body" style="padding:0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th class="text-right">Profit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for p in least_profitable %}
+                    <tr>
+                        <td>{{ p.product_name }}</td>
+                        <td class="text-right mono">
+                            ₹{{ "%.0f"|format(p.profit) }}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
 <!-- ── INVENTORY TURNOVER ─────────────────────────────────────────────────── -->
 <div class="analytics-section">
   <div class="section-title">🔄 Inventory Turnover Rate</div>

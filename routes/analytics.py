@@ -166,17 +166,76 @@ def index():
     top_selling     = _top_selling(limit=10, days=days)
     dead_stock      = _dead_stock(days=days)
     rev_by_cat = [
-    {
-        'category': r.category or 'Other',
-        'revenue': float(r.revenue),
-        'orders': r.orders
-    }
-    for r in _revenue_by_category(days=days)
-]
+        {
+            'category': r.category or 'Other',
+            'revenue': float(r.revenue),
+            'orders': r.orders
+        }
+        for r in _revenue_by_category(days=days)
+    ]
     avg_ov          = _avg_order_value(days=days)
     monthly_growth  = _monthly_growth()
     low_stock       = _low_stock_alerts()
     inventory_tv    = _inventory_turnover(days=days)
+
+    total_revenue = (
+        db.session.query(
+            func.coalesce(
+                func.sum(OrderItem.quantity * OrderItem.selling_price),
+                0
+            )
+        ).scalar()
+    )
+
+    total_profit = (
+        db.session.query(
+            func.coalesce(
+                func.sum(
+                    OrderItem.quantity *
+                    (OrderItem.selling_price - OrderItem.cost_price)
+                ),
+                0
+            )
+        ).scalar()
+    )
+
+    margin_percent = 0
+
+    if float(total_revenue) > 0:
+        margin_percent = round(
+            (float(total_profit) / float(total_revenue)) * 100,
+            1
+        )
+
+    most_profitable = (
+        db.session.query(
+            Product.product_name,
+            func.sum(
+                OrderItem.quantity *
+                (OrderItem.selling_price - OrderItem.cost_price)
+            ).label('profit')
+        )
+        .join(Product, Product.product_id == OrderItem.product_id)
+        .group_by(Product.product_id)
+        .order_by(desc('profit'))
+        .limit(10)
+        .all()
+    )
+
+    least_profitable = (
+        db.session.query(
+            Product.product_name,
+            func.sum(
+                OrderItem.quantity *
+                (OrderItem.selling_price - OrderItem.cost_price)
+            ).label('profit')
+        )
+        .join(Product, Product.product_id == OrderItem.product_id)
+        .group_by(Product.product_id)
+        .order_by(asc('profit'))
+        .limit(10)
+        .all()
+    )
 
     return render_template(
         'analytics/index.html',
@@ -188,8 +247,12 @@ def index():
         monthly_growth=monthly_growth,
         low_stock=low_stock,
         inventory_tv=inventory_tv,
+        total_revenue=total_revenue,
+        total_profit=total_profit,
+        margin_percent=margin_percent,
+        most_profitable=most_profitable,
+        least_profitable=least_profitable
     )
-
 
 # ─── API endpoints for charts ─────────────────────────────────────────────────
 @analytics_bp.route('/api/category-revenue')

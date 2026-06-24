@@ -144,6 +144,11 @@ class OrderItem(db.Model):
 
     # ── NEW: unit label snapshot at time of sale ──────────────────────────────
     unit_type     = db.Column(db.String(20), nullable=False, default='Units')
+    selling_price = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    cost_price    = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+
+    unit_price = db.Column(db.Numeric(10, 2))
+    subtotal = db.Column(db.Numeric(10, 2))
 
     @property
     def quantity_display(self):
@@ -152,6 +157,25 @@ class OrderItem(db.Model):
         if qty == int(qty):
             return str(int(qty))
         return f"{qty:.3f}".rstrip('0')
+    
+    @property
+    def revenue(self):
+         return float(self.quantity) * float(self.selling_price)
+    @property
+    def cost(self):
+        return float(self.quantity) * float(self.cost_price)
+
+    
+
+    @property
+    def profit(self):
+        return self.revenue - self.cost
+
+    @property
+    def margin_percent(self):
+        if self.revenue == 0:
+            return 0
+        return round((self.profit / self.revenue) * 100, 1)
 
     def to_dict(self):
         return {
@@ -186,11 +210,22 @@ class StockEntry(db.Model):
     __tablename__ = 'stock_entries'
 
     entry_id       = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
     product_id     = db.Column(db.Integer, db.ForeignKey('products.product_id'), nullable=False)
+    product = db.relationship('Product')
     quantity_added = db.Column(db.Numeric(10, 3), nullable=False)   # Decimal for weight
     previous_stock = db.Column(db.Numeric(10, 3), nullable=False)
     new_stock      = db.Column(db.Numeric(10, 3), nullable=False)
     remarks        = db.Column(db.String(255), nullable=True)
+    supplier_name = db.Column(db.String(100), nullable=True)
+
+    invoice_no = db.Column(db.String(50), nullable=True)
+
+    purchase_price = db.Column(
+    db.Numeric(10, 2),
+    nullable=False,
+    default=0
+    )
     entry_date     = db.Column(db.DateTime, default=datetime.now)
 
     def to_dict(self):

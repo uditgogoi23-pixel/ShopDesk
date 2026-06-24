@@ -1,53 +1,100 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Stock Refill</title>
-</head>
-<body>
+{% extends 'base.html' %}
 
-<h1>Stock Refill</h1>
+{% block title %}Stock Refill{% endblock %}
 
-<h2>{{ product.product_name }}</h2>
+{% block content %}
 
-<p>
-Current Stock:
-<b>{{ product.stock }}</b>
-</p>
+<div class="page-header">
+    <div>
+        <h1>📦 Inventory Refill</h1>
+        <p>Receive stock from suppliers and update inventory levels</p>
+    </div>
+</div>
+
+
+
+        <div class="alert alert-info" style="margin-bottom:20px;">
+            Current Stock: <strong>{{ product.stock }}</strong>
+        </div>
+<div class="card" style="max-width:850px;margin:auto;">
+    <div class="card-header">
+        <h2>📦 Inventory Refill</h2>
+    </div>
+
+    <div class="card-body">
 
 <form method="POST">
 
-    <label>Quantity Received</label>
-    <br>
-    <input
-        type="number"
-        name="quantity"
-        required
-        min="1"
-    >
+    <div class="form-group" style="margin-bottom:18px;">
+        <label>Quantity Received</label>
+        <input
+            type="number"
+            name="quantity"
+            class="form-control"
+            required
+            min="1"
+        >
+    </div>
 
-    <br><br>
+    <div class="form-group" style="margin-bottom:18px;">
+        <label>Supplier Name</label>
+        <input
+            type="text"
+            name="supplier_name"
+            class="form-control"
+            placeholder="ABC Dairy"
+        >
+    </div>
 
-    <label>Remarks</label>
-    <br>
-    <input
-        type="text"
-        name="remarks"
-        placeholder="Weekly Purchase"
-    >
+    <div class="form-group" style="margin-bottom:18px;">
+        <label>Invoice Number</label>
+        <input
+            type="text"
+            name="invoice_no"
+            class="form-control"
+            placeholder="INV-1001"
+        >
+    </div>
 
-    <br><br>
+    <div class="form-group" style="margin-bottom:18px;">
+        <label>Purchase Price (per unit)</label>
+        <input
+            type="number"
+            step="0.01"
+            name="purchase_price"
+            class="form-control"
+            placeholder="38.50"
+        >
+    </div>
 
-    <button type="submit">
-        Update Stock
-    </button>
+    <div class="form-group" style="margin-bottom:24px;">
+        <label>Remarks</label>
+        <input
+            type="text"
+            name="remarks"
+            class="form-control"
+            placeholder="Weekly Purchase"
+        >
+    </div>
+
+    <div style="display:flex;gap:12px;">
+        <button type="submit" class="btn btn-primary">
+            ➕ Update Stock
+        </button>
+
+        <a href="{{ url_for('products.index') }}" class="btn btn-secondary">
+            ← Back to Products
+        </a>
+    </div>
+
 
 </form>
 
 <br>
 
-<a href="{{ url_for('products.index') }}">
-Back to Products
+<a href="{{ url_for('products.index') }}" class="btn btn-outline">
+    ← Back to Products
 </a>
-
-</body>
-</html>
+    </div>
+</div>
+{% endblock %}

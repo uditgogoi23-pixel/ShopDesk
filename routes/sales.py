@@ -60,7 +60,7 @@ def complete_sale():
     payment_mode     = data.get('payment_mode', 'Cash')
 
     # ── Resolve customer ──────────────────────────────────────────────────────
-    customer_id = 1   # default walk-in
+    customer_id = None   # default walk-in
     if phone:
         customer = Customer.query.filter_by(phone=phone).first()
         if not customer:
@@ -130,11 +130,18 @@ def complete_sale():
             unit_type = entry['unit_type']
 
             order_item = OrderItem(
-                order_id   = order.order_id,
-                product_id = prod.product_id,
-                quantity   = qty,
-                unit_type  = unit_type,
-            )
+            order_id=order.order_id,
+            product_id=prod.product_id,
+            quantity=qty,
+            unit_type=unit_type,
+
+            unit_price=prod.price,
+            subtotal=float(qty) * float(prod.price),
+
+            selling_price=prod.price,
+            cost_price=prod.cost_price
+        )
+            
             db.session.add(order_item)
             prod.stock = float(prod.stock) - qty   # float arithmetic for decimals
 

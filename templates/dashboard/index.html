@@ -30,7 +30,25 @@
     <div class="kpi-value">₹{{ "%.0f"|format(today_rev) }}</div>
     <div class="kpi-sub">{{ today_orders }} order{{ 's' if today_orders != 1 else '' }} today</div>
   </div>
-
+  <div class="kpi-card" style="--kpi-accent:#10b981;">
+    <div class="kpi-label">Today's Profit</div>
+    <div class="kpi-value">₹{{ "%.0f"|format(today_profit) }}</div>
+    <div class="kpi-sub">Gross profit earned today</div>
+</div>
+  <div class="kpi-card" style="--kpi-accent:#10b981;">
+    <div class="kpi-label">Monthly Profit</div>
+    <div class="kpi-value">₹{{ "%.0f"|format(month_profit) }}</div>
+    <div class="kpi-sub">Gross profit earned this month</div>
+</div>
+<div class="kpi-card" style="--kpi-accent: #8b5cf6;">
+    <div class="kpi-label">Profit Margin</div>
+    <div class="kpi-value">
+        {{ margin_percent }}%
+    </div>
+    <div class="kpi-sub">
+        Monthly gross margin
+    </div>
+</div>
   <div class="kpi-card" style="--kpi-accent: #3b82f6;">
     <div class="kpi-label">Monthly Revenue</div>
     <div class="kpi-value">₹{{ "%.0f"|format(month_rev) }}</div>
@@ -60,7 +78,11 @@
     <div class="kpi-value">₹{{ "%.0f"|format(inv_value) }}</div>
     <div class="kpi-sub">Current stock × price</div>
   </div>
-
+<div class="kpi-card" style="--kpi-accent:#f59e0b;">
+    <div class="kpi-label">Purchase Value</div>
+    <div class="kpi-value">₹{{ "%.0f"|format(purchase_value) }}</div>
+    <div class="kpi-sub">Total purchases</div>
+  </div>
 </div>
 
 <!-- ── GRID: Chart + Top Products ───────────────────────────────────────── -->
@@ -208,7 +230,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 (function() {
-  const trend = {{ monthly_trend | tojson }};
+  const trend = JSON.parse('{{ monthly_trend | tojson | tojson | safe }}');
   if (!trend.length) return;
 
   const labels = trend.map(r => r.month);
@@ -254,5 +276,6 @@
     }
   });
 })();
+
 </script>
 {% endblock %}
