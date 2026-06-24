@@ -2,62 +2,132 @@
 {% block title %}Edit Product{% endblock %}
 
 {% block breadcrumb %}
-  <a href="{{ url_for('products.index') }}">Products</a> › <strong>Edit #{{ product.product_id }}</strong>
+  <a href="{{ url_for('products.index') }}">Products</a> › <strong>Edit: {{ product.product_name }}</strong>
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div class="page-header-left">
-    <h1>Edit Product</h1>
-    <p>Updating: {{ product.product_name }}</p>
-  </div>
-</div>
+<div style="max-width:560px; margin:0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Edit Product</span>
+      <span class="badge badge-neutral">#{{ product.product_id }}</span>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('products.edit', product_id=product.product_id) }}">
 
-<div class="card" style="max-width: 560px;">
-  <div class="card-header">
-    <span class="card-title">Product Details</span>
-    <span class="badge badge-neutral">ID #{{ product.product_id }}</span>
-  </div>
-  <div class="card-body">
-    <form method="POST">
+        <!-- Product Name -->
+        <div class="form-group">
+          <label class="form-label">Product Name <span style="color:var(--danger);">*</span></label>
+          <input type="text" name="product_name" class="form-control"
+                 value="{{ product.product_name }}" required autofocus>
+        </div>
 
-      <div class="form-group">
-        <label class="form-label">Product Name *</label>
-        <input type="text" name="product_name" class="form-control"
-               value="{{ product.product_name }}" required autofocus>
-      </div>
-
-      <div class="form-row">
+        <!-- Category -->
         <div class="form-group">
           <label class="form-label">Category</label>
           <select name="category" class="form-control">
             <option value="">— Select Category —</option>
             {% for cat in categories %}
-              <option value="{{ cat }}" {{ 'selected' if product.category == cat }}>{{ cat }}</option>
+              <option value="{{ cat }}" {% if cat == product.category %}selected{% endif %}>
+                {{ cat }}
+              </option>
             {% endfor %}
           </select>
         </div>
 
+        <!-- Unit Type  ← NEW -->
         <div class="form-group">
-          <label class="form-label">Selling Price (₹) *</label>
-          <input type="number" name="price" class="form-control"
-                 value="{{ product.price }}" min="0" step="0.01" required>
+          <label class="form-label">Unit of Sale</label>
+          <select name="unit_type" class="form-control" id="unitTypeSelect" onchange="updateStockLabel()">
+            {% for u in unit_types %}
+              <option value="{{ u }}" {% if u == product.unit_type %}selected{% endif %}>{{ u }}</option>
+            {% endfor %}
+          </select>
+          <div style="font-size:11px; color:var(--slate-400); margin-top:4px;">
+            Changing this updates how the POS modal shows qty input for this product.
+          </div>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label class="form-label">Current Stock (units)</label>
-        <input type="number" name="stock" class="form-control"
-               value="{{ product.stock }}" min="0">
-        <div class="form-hint">Edit to restock or correct inventory count.</div>
-      </div>
+        <div class="form-row">
+          <!-- Selling Price -->
+          <div class="form-group">
+            <label class="form-label">Selling Price (₹) <span style="color:var(--danger);">*</span></label>
+            <input type="number" name="price" class="form-control"
+                   value="{{ product.price }}" step="0.01" min="0" required>
+          </div>
 
-      <div class="d-flex gap-10 mt-16">
-        <button type="submit" class="btn btn-amber">Update Product</button>
-        <a href="{{ url_for('products.index') }}" class="btn btn-outline">Cancel</a>
-      </div>
+          <!-- Cost Price  ← NEW -->
+          <div class="form-group">
+            <label class="form-label">Cost / Purchase Price (₹)</label>
+            <input type="number" name="cost_price" class="form-control"
+                   value="{{ product.cost_price or 0 }}" step="0.01" min="0">
+            {% if product.margin_percent is not none %}
+              <div style="font-size:11px; color:var(--success); margin-top:4px; font-weight:600;">
+                Margin: {{ product.margin_percent }}%
+              </div>
+            {% else %}
+              <div style="font-size:11px; color:var(--slate-400); margin-top:4px;">
+                Set cost price to see margin.
+              </div>
+            {% endif %}
+          </div>
+        </div>
 
-    </form>
+        <div class="form-row">
+          <!-- Stock -->
+          <div class="form-group">
+            <label class="form-label" id="stockLabel">
+              Current Stock
+              {% if product.is_low_stock %}
+                <span style="color:var(--warning); font-size:11px;">(Low Stock)</span>
+              {% endif %}
+            </label>
+            <input type="number" name="stock" class="form-control"
+                   value="{{ product.stock }}" step="0.001" min="0">
+            <div style="font-size:11px; color:var(--slate-400); margin-top:4px;">
+              Use the <a href="{{ url_for('products.refill_stock', product_id=product.product_id) }}"
+                         style="color:var(--navy-700);">Refill Stock</a> page for logged stock additions.
+            </div>
+          </div>
+
+          <!-- Reorder Level  ← NEW -->
+          <div class="form-group">
+            <label class="form-label">Reorder Level</label>
+            <input type="number" name="reorder_level" class="form-control"
+                   value="{{ product.reorder_level }}" step="1" min="0">
+            <div style="font-size:11px; color:var(--slate-400); margin-top:4px;">
+              Low-stock alert fires when stock ≤ this value.
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex; gap:10px; margin-top:8px;">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <a href="{{ url_for('products.index') }}" class="btn btn-outline">Cancel</a>
+          <form method="POST"
+                action="{{ url_for('products.delete', product_id=product.product_id) }}"
+                style="margin:0; margin-left:auto;"
+                onsubmit="return confirm('Delete {{ product.product_name }}? This cannot be undone.')">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+
+      </form>
+    </div>
   </div>
 </div>
+
+<script>
+function updateStockLabel() {
+  const unit  = document.getElementById('unitTypeSelect').value;
+  const label = document.getElementById('stockLabel');
+  const weightUnits = ['kg', 'g', 'litre', 'ml'];
+  label.textContent = weightUnits.includes(unit)
+    ? `Current Stock (${unit})`
+    : 'Current Stock (units)';
+}
+// Set label on page load
+updateStockLabel();
+</script>
 {% endblock %}

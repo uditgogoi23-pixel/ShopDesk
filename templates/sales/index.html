@@ -7,14 +7,15 @@
 
 {% block extra_css %}
 <style>
+  /* ── POS LAYOUT ─────────────────────────────────────────────────────────── */
   .pos-layout {
     display: grid;
     grid-template-columns: 1fr 340px;
     gap: 20px;
     height: calc(100vh - 120px);
   }
-  .pos-left   { overflow-y: auto; }
-  .pos-right  {
+  .pos-left  { overflow-y: auto; }
+  .pos-right {
     background: var(--white);
     border: 1px solid var(--slate-200);
     border-radius: var(--radius-lg);
@@ -66,9 +67,141 @@
   .cat-tab:hover, .cat-tab.active {
     background: var(--navy-800); color: var(--white); border-color: var(--navy-800);
   }
-  .pos-search {
+  .pos-search { margin-bottom: 16px; }
+
+  /* ── QUANTITY MODAL OVERLAY ──────────────────────────────────────────────── */
+  .qty-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 26, 0.55);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .qty-modal-overlay.open { display: flex; }
+
+  .qty-modal {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 360px;
+    max-width: 95vw;
+    overflow: hidden;
+    animation: modalIn .15s ease;
+  }
+  @keyframes modalIn {
+    from { transform: translateY(-12px) scale(.97); opacity: 0; }
+    to   { transform: translateY(0)     scale(1);   opacity: 1; }
+  }
+
+  .qty-modal-header {
+    background: var(--navy-800);
+    padding: 16px 20px;
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .qty-modal-product-name {
+    font-size: 15px; font-weight: 700; color: var(--white);
+    line-height: 1.3; flex: 1; margin-right: 12px;
+  }
+  .qty-modal-product-meta {
+    font-size: 11px; color: var(--slate-400); margin-top: 3px;
+  }
+  .qty-modal-close {
+    background: none; border: none;
+    color: var(--slate-400); font-size: 22px; line-height: 1;
+    cursor: pointer; padding: 0;
+  }
+  .qty-modal-close:hover { color: var(--white); }
+
+  .qty-modal-body { padding: 20px; }
+
+  /* Unit selector tabs */
+  .unit-tabs {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .unit-tab {
+    padding: 4px 12px; border-radius: 99px;
+    font-size: 12px; font-weight: 600;
+    border: 1px solid var(--slate-300);
+    background: var(--white); color: var(--slate-600);
+    cursor: pointer; transition: all .1s;
+  }
+  .unit-tab.active {
+    background: var(--amber-400); color: var(--navy-950); border-color: var(--amber-400);
+  }
+
+  /* Quick-tap presets */
+  .qty-presets {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .qty-preset {
+    padding: 5px 12px; border-radius: var(--radius-sm);
+    font-size: 12px; font-weight: 600;
+    border: 1px solid var(--slate-200);
+    background: var(--slate-50); color: var(--slate-700);
+    cursor: pointer; transition: all .1s;
+  }
+  .qty-preset:hover {
+    background: var(--navy-800); color: var(--white); border-color: var(--navy-800);
+  }
+
+  /* Stepper row */
+  .qty-stepper {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+  }
+  .qty-stepper-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 2px solid var(--slate-300);
+    background: var(--white); color: var(--slate-700);
+    font-size: 20px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all .1s; flex-shrink: 0;
+  }
+  .qty-stepper-btn:hover {
+    background: var(--navy-800); color: var(--white); border-color: var(--navy-800);
+  }
+  .qty-stepper-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 2px solid var(--navy-600);
+    border-radius: var(--radius-sm);
+    font-size: 22px; font-weight: 700;
+    text-align: center;
+    font-family: var(--font-mono);
+    color: var(--slate-800);
+  }
+  .qty-stepper-input:focus { outline: none; border-color: var(--amber-400); }
+  .qty-unit-label {
+    font-size: 14px; font-weight: 600;
+    color: var(--slate-500); min-width: 36px;
+  }
+
+  /* Line total */
+  .qty-line-total {
+    text-align: center;
+    font-size: 13px; color: var(--slate-500);
     margin-bottom: 16px;
   }
+  .qty-line-total strong {
+    font-family: var(--font-mono);
+    font-size: 16px; color: var(--navy-800);
+  }
+
+  .qty-modal-footer {
+    padding: 0 20px 20px;
+    display: flex; gap: 10px;
+  }
+  .qty-modal-footer .btn { flex: 1; }
+
+  /* Stock badge inside modal */
+  .qty-stock-badge {
+    display: inline-block;
+    font-size: 11px; color: var(--slate-500);
+    background: var(--slate-100);
+    border-radius: 99px; padding: 2px 8px; margin-top: 4px;
+  }
+
   @media (max-width: 800px) {
     .pos-layout { grid-template-columns: 1fr; }
     .pos-right { position: static; max-height: none; }
@@ -79,7 +212,7 @@
 {% block content %}
 <div class="pos-layout">
 
-  <!-- ── LEFT: PRODUCT GRID ────────────────────────────────────────────── -->
+  <!-- ── LEFT: PRODUCT GRID ─────────────────────────────────────────────── -->
   <div class="pos-left">
 
     <div class="pos-search">
@@ -96,17 +229,20 @@
 
     <div class="product-grid" id="productGrid">
       {% for p in products %}
-        <div class="product-card {{ 'low-s' if p.stock <= 10 else '' }}"
+        <div class="product-card {{ 'low-s' if p.is_low_stock else '' }}"
              data-id="{{ p.product_id }}"
              data-name="{{ p.product_name }}"
              data-price="{{ p.price }}"
              data-stock="{{ p.stock }}"
+             data-unit="{{ p.unit_type }}"
              data-category="{{ p.category or '' }}"
-             onclick="addToCart({{ p.product_id }}, '{{ p.product_name|e }}', {{ p.price }}, {{ p.stock }})">
+             onclick="openQtyModal({{ p.product_id }}, '{{ p.product_name|e }}', {{ p.price }}, {{ p.stock }}, '{{ p.unit_type }}')">
           <div class="pcard-category">{{ p.category or 'General' }}</div>
           <div class="pcard-name">{{ p.product_name }}</div>
           <div class="pcard-price">₹{{ "%.2f"|format(p.price) }}</div>
-          <div class="pcard-stock">{{ p.stock }} in stock</div>
+          <div class="pcard-stock {{ 'low-s' if p.is_low_stock else '' }}">
+            {{ p.stock }} {{ p.unit_type }} in stock
+          </div>
         </div>
       {% endfor %}
     </div>
@@ -119,7 +255,7 @@
     {% endif %}
   </div>
 
-  <!-- ── RIGHT: CART ───────────────────────────────────────────────────── -->
+  <!-- ── RIGHT: CART ────────────────────────────────────────────────────── -->
   <div class="pos-right">
     <div class="cart-header">
       <span class="cart-title">Cart</span>
@@ -132,7 +268,7 @@
     <div class="cart-items" id="cartItems">
       <div class="empty-state" id="cartEmpty">
         <h3>Cart is empty</h3>
-        <p>Click a product to add it</p>
+        <p>Tap a product to add it</p>
       </div>
     </div>
 
@@ -148,6 +284,7 @@
         </div>
       </div>
 
+      <!-- Payment mode -->
       <div class="form-group mb-0" style="margin-bottom:12px;">
         <label class="form-label">Payment Mode</label>
         <select id="paymentMode" class="form-control">
@@ -156,83 +293,401 @@
           {% endfor %}
         </select>
       </div>
-        <div class="form-group">
 
-    <div class="form-check mb-2">
-        <input
-            class="form-check-input"
-            type="checkbox"
-            id="walkInCustomer"
-            checked>
+      <!-- Customer section -->
+      <div class="form-group">
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="walkInCustomer" checked>
+          <label class="form-check-label">Walk-in Customer</label>
+        </div>
+        <label class="form-label">Customer Name</label>
+        <input type="text" id="customerName" class="form-control"
+               placeholder="Enter customer name" style="margin-bottom:8px;">
+        <label class="form-label">Customer Phone</label>
+        <input type="tel" id="customerPhone" class="form-control"
+               placeholder="Enter 10-digit phone" maxlength="10">
+        <div id="customerStatus" style="margin-top:6px; font-size:12px;"></div>
+      </div>
 
-        <label class="form-check-label">
-            Walk-in Customer
-        </label>
-    </div>
+      <!-- Discount -->
+      <div class="form-group" style="margin-bottom:10px;">
+        <label class="form-label">Discount (%)</label>
+        <input type="number" id="discount" class="form-control"
+               value="0" min="0" max="100">
+      </div>
 
-    
-    <label>Customer Name</label>
-        <input
-            type="text"
-            id="customerName"
-            class="form-control"
-            placeholder="Enter customer name">
-
-        <label>Customer Phone</label>
-        <input
-            type="tel"
-            id="customerPhone"
-           class="form-control"
-            placeholder="Enter 10 digit phone"
-            maxlength="10">
-
-    <div id="customerStatus"></div>
-    
-
-</div>
-    <div class="form-group" style="margin-bottom:10px;">
-      <label>Discount (%)</label>
-      <input type="number"
-           id="discount"
-           class="form-control"
-           value="0"
-           min="0"
-           max="100">
-    </div>
       <button class="btn btn-amber btn-lg" style="width:100%;"
               onclick="completeSale()" id="btnCompleteSale" disabled>
         Complete Sale
       </button>
-
       <div id="saleMessage" style="margin-top:10px; font-size:13px; text-align:center;"></div>
     </div>
   </div>
 </div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     QUANTITY MODAL
+     Opens when cashier taps a product card.
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="qty-modal-overlay" id="qtyModalOverlay" onclick="closeQtyModal(event)">
+  <div class="qty-modal" id="qtyModal">
+
+    <!-- Header -->
+    <div class="qty-modal-header">
+      <div>
+        <div class="qty-modal-product-name" id="modalProductName">Product Name</div>
+        <div class="qty-modal-product-meta">
+          ₹<span id="modalProductPrice">0.00</span> per <span id="modalUnitLabel">unit</span>
+          &nbsp;·&nbsp;
+          <span class="qty-stock-badge">
+            <span id="modalStockAmt">0</span> <span id="modalStockUnit">units</span> available
+          </span>
+        </div>
+      </div>
+      <button class="qty-modal-close" onclick="closeQtyModalDirect()">×</button>
+    </div>
+
+    <!-- Body -->
+    <div class="qty-modal-body">
+
+      <!-- Unit type tabs (shown for weight/volume products, hidden for plain Units) -->
+      <div class="unit-tabs" id="unitTabs" style="display:none;"></div>
+
+      <!-- Quick preset buttons -->
+      <div class="qty-presets" id="qtyPresets"></div>
+
+      <!-- Stepper -->
+      <div class="qty-stepper">
+        <button class="qty-stepper-btn" onclick="stepQty(-1)">−</button>
+        <input  class="qty-stepper-input" type="number" id="qtyInput"
+                value="1" min="0.001" step="0.001" oninput="updateLineTotal()">
+        <span   class="qty-unit-label" id="stepperUnitLabel">units</span>
+        <button class="qty-stepper-btn" onclick="stepQty(1)">+</button>
+      </div>
+
+      <!-- Running line total -->
+      <div class="qty-line-total">
+        Line total: <strong id="modalLineTotal">₹0.00</strong>
+      </div>
+    </div>
+
+    <!-- Footer buttons -->
+    <div class="qty-modal-footer">
+      <button class="btn btn-outline" onclick="closeQtyModalDirect()">Cancel</button>
+      <button class="btn btn-amber btn-lg" onclick="confirmAddToCart()">
+        Add to Cart
+      </button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
+
 
 {% block extra_js %}
 <script>
-/* ── CART STATE ──────────────────────────────────────────────────────── */
-let cart = {};   // { product_id: { name, price, qty, stock } }
+/* ══════════════════════════════════════════════════════════════════════════════
+   SHOPDESK POS — CART & QUANTITY MODAL
+   ══════════════════════════════════════════════════════════════════════════════ */
 
-function addToCart(id, name, price, stock) {
-  if (cart[id]) {
-    if (cart[id].qty >= stock) {
-      showMsg('⚠ Max stock reached for ' + name, 'warning');
-      return;
-    }
-    cart[id].qty++;
-  } else {
-    cart[id] = { name, price, qty: 1, stock };
-  }
-  renderCart();
+/* ── CART STATE ──────────────────────────────────────────────────────────────
+   Key: product_id (string)
+   Value: { name, price, qty, stock, unit_type }
+   qty is always a float (supports 0.250 kg etc.)
+*/
+let cart = {};
+
+/* ── MODAL STATE ─────────────────────────────────────────────────────────────
+   Holds data for the product currently shown in the quantity modal.
+*/
+let modal = {
+  id:        null,
+  name:      '',
+  price:     0,
+  stock:     0,
+  unit_type: 'Units',   // from product data-unit attribute
+  active_unit: 'Units', // currently selected unit tab
+};
+
+/* ── UNIT CONFIGURATION ──────────────────────────────────────────────────────
+   Maps unit_type → presets shown as quick-tap buttons.
+   step = how much each + / - press changes the value.
+*/
+const UNIT_CONFIG = {
+  'Units':  { step: 1,     presets: [1, 2, 3, 5, 10],                       decimals: 0 },
+  'kg':     { step: 0.5,   presets: [0.25, 0.5, 1, 2, 5],                   decimals: 3 },
+  'g':      { step: 50,    presets: [100, 200, 250, 500],                    decimals: 0 },
+  'litre':  { step: 0.5,   presets: [0.25, 0.5, 1, 2, 5],                   decimals: 3 },
+  'ml':     { step: 50,    presets: [100, 200, 250, 500, 1000],              decimals: 0 },
+  'pack':   { step: 1,     presets: [1, 2, 3, 5, 10],                       decimals: 0 },
+  'dozen':  { step: 1,     presets: [1, 2, 3],                               decimals: 0 },
+  'piece':  { step: 1,     presets: [1, 2, 5, 10],                          decimals: 0 },
+};
+
+/* Fallback for unknown unit types */
+function getUnitConfig(unit) {
+  return UNIT_CONFIG[unit] || UNIT_CONFIG['Units'];
 }
 
+
+/* ── OPEN QUANTITY MODAL ─────────────────────────────────────────────────────
+   Called from product card onclick.
+*/
+function openQtyModal(id, name, price, stock, unit_type) {
+  modal.id          = id;
+  modal.name        = name;
+  modal.price       = parseFloat(price);
+  modal.stock       = parseFloat(stock);
+  modal.unit_type   = unit_type || 'Units';
+  modal.active_unit = modal.unit_type;
+
+  document.getElementById('modalProductName').textContent  = name;
+  document.getElementById('modalProductPrice').textContent = modal.price.toFixed(2);
+  document.getElementById('modalUnitLabel').textContent    = modal.unit_type;
+  document.getElementById('modalStockAmt').textContent     = modal.stock;
+  document.getElementById('modalStockUnit').textContent    = modal.unit_type;
+
+  // Set default quantity
+  const cfg = getUnitConfig(modal.active_unit);
+  const defaultQty = cfg.presets[0] || 1;
+  document.getElementById('qtyInput').value = defaultQty;
+  document.getElementById('qtyInput').step  = cfg.decimals > 0 ? 0.001 : 1;
+
+  renderUnitTabs();
+  renderPresets();
+  updateStepperUnitLabel();
+  updateLineTotal();
+
+  document.getElementById('qtyModalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('qtyInput').focus(), 80);
+}
+
+function closeQtyModal(e) {
+  // Only close when clicking the overlay itself, not the modal box
+  if (e.target === document.getElementById('qtyModalOverlay')) {
+    closeQtyModalDirect();
+  }
+}
+
+function closeQtyModalDirect() {
+  document.getElementById('qtyModalOverlay').classList.remove('open');
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeQtyModalDirect();
+  if (e.key === 'Enter' &&
+      document.getElementById('qtyModalOverlay').classList.contains('open')) {
+    confirmAddToCart();
+  }
+});
+
+
+/* ── UNIT TABS (shown for weight / volume products) ─────────────────────────
+   For 'Units', 'pack', 'dozen', 'piece' — no tabs shown (single unit).
+   For 'kg', 'g' — show both (allow cashier to switch between kg and g).
+   For 'litre', 'ml' — show both.
+*/
+const UNIT_GROUPS = {
+  'kg':    ['kg', 'g'],
+  'g':     ['kg', 'g'],
+  'litre': ['litre', 'ml'],
+  'ml':    ['litre', 'ml'],
+};
+
+function renderUnitTabs() {
+  const container  = document.getElementById('unitTabs');
+  const group      = UNIT_GROUPS[modal.unit_type];
+
+  if (!group) {
+    container.style.display = 'none';
+    container.innerHTML     = '';
+    return;
+  }
+
+  container.style.display = 'flex';
+  container.innerHTML = group.map(u => `
+    <button class="unit-tab ${u === modal.active_unit ? 'active' : ''}"
+            onclick="switchUnit('${u}')">
+      ${u}
+    </button>
+  `).join('');
+}
+
+function switchUnit(unit) {
+  modal.active_unit = unit;
+  const cfg = getUnitConfig(unit);
+  document.getElementById('qtyInput').value = cfg.presets[0] || 1;
+  document.getElementById('qtyInput').step  = cfg.decimals > 0 ? 0.001 : 1;
+
+  // Re-render tabs, presets, label, total
+  renderUnitTabs();
+  renderPresets();
+  updateStepperUnitLabel();
+  updateLineTotal();
+}
+
+
+/* ── PRESET BUTTONS ──────────────────────────────────────────────────────────
+   Quick-tap buttons like 0.25 kg, 0.5 kg, 1 kg, 2 kg, 5 kg
+*/
+function renderPresets() {
+
+    const cfg = getUnitConfig(modal.active_unit);
+    const container = document.getElementById('qtyPresets');
+
+    container.innerHTML = cfg.presets.map(p => {
+
+        let label = p;
+
+        if (modal.active_unit === 'kg') {
+            label = p < 1 ? `${p * 1000}g` : `${p}kg`;
+        }
+
+        else if (modal.active_unit === 'litre') {
+            label = p < 1 ? `${p * 1000}ml` : `${p}L`;
+        }
+
+        else if (modal.active_unit === 'g') {
+            label = `${p}g`;
+        }
+
+        else if (modal.active_unit === 'ml') {
+            label = `${p}ml`;
+        }
+
+        else if (modal.active_unit === 'pack') {
+            label = `${p} Pack`;
+        }
+
+        else if (modal.active_unit === 'dozen') {
+            label = `${p} Dozen`;
+        }
+
+        else {
+            label = `${p}`;
+        }
+
+        return `
+            <button
+                class="qty-preset"
+                onclick="setQtyPreset(${p})">
+                ${label}
+            </button>
+        `;
+
+    }).join('');
+
+}
+function setQtyPreset(value) {
+  document.getElementById('qtyInput').value = value;
+  updateLineTotal();
+  // Highlight active preset
+  document.querySelectorAll('.qty-preset').forEach(btn => {
+    btn.style.background  = '';
+    btn.style.color       = '';
+    btn.style.borderColor = '';
+    if (parseFloat(btn.textContent) === value) {
+      btn.style.background  = 'var(--navy-800)';
+      btn.style.color       = '#fff';
+      btn.style.borderColor = 'var(--navy-800)';
+    }
+  });
+}
+
+
+/* ── STEPPER ─────────────────────────────────────────────────────────────────
+   + / - buttons beside the input
+*/
+function stepQty(direction) {
+  const cfg     = getUnitConfig(modal.active_unit);
+  const current = parseFloat(document.getElementById('qtyInput').value) || 0;
+  let   next    = current + direction * cfg.step;
+
+  // Clamp: minimum one step, maximum available stock
+  const minQty = cfg.decimals > 0 ? 0.001 : 1;
+  next = Math.max(minQty, Math.min(modal.stock, parseFloat(next.toFixed(cfg.decimals))));
+
+  document.getElementById('qtyInput').value = next;
+  updateLineTotal();
+}
+
+function updateStepperUnitLabel() {
+  document.getElementById('stepperUnitLabel').textContent = modal.active_unit;
+  document.getElementById('modalUnitLabel').textContent   = modal.active_unit;
+}
+
+
+/* ── LINE TOTAL ──────────────────────────────────────────────────────────────
+   Real-time price × qty as cashier types
+*/
+function updateLineTotal() {
+  const qty   = parseFloat(document.getElementById('qtyInput').value) || 0;
+  const total = modal.price * qty;
+  document.getElementById('modalLineTotal').textContent = '₹' + total.toFixed(2);
+}
+
+
+/* ── CONFIRM ADD TO CART ─────────────────────────────────────────────────────
+   Reads qty & active_unit from modal state and adds/updates cart entry.
+   One product can appear once in the cart (increments if tapped again).
+*/
+function confirmAddToCart() {
+  const qty = parseFloat(document.getElementById('qtyInput').value);
+
+  if (!qty || qty <= 0) {
+    document.getElementById('qtyInput').focus();
+    return;
+  }
+  if (qty > modal.stock) {
+    alert(`Only ${modal.stock} ${modal.active_unit} available.`);
+    return;
+  }
+
+  const id        = modal.id;
+  const unit_type = modal.active_unit;
+
+  if (cart[id]) {
+    // Same product already in cart — just update qty
+    const newQty = parseFloat((cart[id].qty + qty).toFixed(3));
+    if (newQty > modal.stock) {
+      alert(`Total would exceed available stock (${modal.stock} ${unit_type}).`);
+      return;
+    }
+    cart[id].qty       = newQty;
+    cart[id].unit_type = unit_type;
+  } else {
+    cart[id] = {
+      name:      modal.name,
+      price:     modal.price,
+      qty:       parseFloat(qty.toFixed(3)),
+      stock:     modal.stock,
+      unit_type: unit_type,
+    };
+  }
+
+  renderCart();
+  closeQtyModalDirect();
+  showMsg(`✓ ${modal.name} added to cart`, 'success');
+}
+
+
+/* ── CHANGE QTY IN CART (inline + / - buttons in cart) ──────────────────────
+   For cart items the step is always 1 unit of the recorded unit_type.
+   For weight items the minimal decrement is 0.001.
+*/
 function changeQty(id, delta) {
   if (!cart[id]) return;
-  cart[id].qty += delta;
-  if (cart[id].qty <= 0) delete cart[id];
-  else if (cart[id].qty > cart[id].stock) cart[id].qty = cart[id].stock;
+  const cfg     = getUnitConfig(cart[id].unit_type);
+  const next    = parseFloat((cart[id].qty + delta * cfg.step).toFixed(3));
+  if (next <= 0) {
+    delete cart[id];
+  } else if (next > cart[id].stock) {
+    cart[id].qty = cart[id].stock;
+  } else {
+    cart[id].qty = next;
+  }
   renderCart();
 }
 
@@ -246,49 +701,54 @@ function clearCart() {
   renderCart();
 }
 
-/* ── RENDER CART ─────────────────────────────────────────────────────── */
+
+/* ── RENDER CART ─────────────────────────────────────────────────────────────
+   Displays all cart items, totals, and enables/disables Complete Sale.
+*/
 function renderCart() {
   const container = document.getElementById('cartItems');
-  const empty     = document.getElementById('cartEmpty');
   const ids       = Object.keys(cart);
 
   if (ids.length === 0) {
-container.innerHTML =
-'<div class="empty-state" id="cartEmpty">' +
-'<h3>Cart is empty</h3>' +
-'<p>Click a product to add it</p>' +
-'</div>';
-
-    document.getElementById('cartCount').textContent = '0';
+    container.innerHTML =
+      '<div class="empty-state" id="cartEmpty">' +
+      '<h3>Cart is empty</h3><p>Tap a product to add it</p></div>';
+    document.getElementById('cartCount').textContent    = '0';
     document.getElementById('cartSubtotal').textContent = '₹0.00';
-    document.getElementById('cartTotal').textContent = '₹0.00';
+    document.getElementById('cartTotal').textContent    = '₹0.00';
     document.getElementById('btnCompleteSale').disabled = true;
     return;
-}
-
-  if (empty && empty.parentElement) {
-    empty.remove();
   }
 
-  let html   = '';
-  let total  = 0;
-  let items  = 0;
+  let html  = '';
+  let total = 0;
+  let items = 0;
 
   for (const id of ids) {
     const item     = cart[id];
     const subtotal = item.price * item.qty;
     total += subtotal;
-    items += item.qty;
+
+    // Display qty: show integer if whole number, else 3dp trimmed
+    const qtyDisplay = (item.qty === Math.floor(item.qty))
+      ? item.qty.toFixed(0)
+      : item.qty.toFixed(3).replace(/0+$/, '');
+
+    items += 1;   // count distinct lines, not total qty
 
     html += `
       <div class="cart-item">
-        <div style="flex:1;">
-          <div class="cart-item-name">${item.name}</div>
-          <div class="cart-item-price">₹${item.price.toFixed(2)} each</div>
+        <div style="flex:1; min-width:0;">
+          <div class="cart-item-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${item.name}
+          </div>
+          <div class="cart-item-price">
+            ₹${item.price.toFixed(2)} × ${qtyDisplay} ${item.unit_type}
+          </div>
         </div>
         <div class="qty-controls">
           <button class="qty-btn" onclick="changeQty(${id}, -1)">−</button>
-          <span class="qty-display">${item.qty}</span>
+          <span class="qty-display">${qtyDisplay}</span>
           <button class="qty-btn" onclick="changeQty(${id}, 1)">+</button>
         </div>
         <div class="cart-item-total">₹${subtotal.toFixed(2)}</div>
@@ -297,167 +757,124 @@ container.innerHTML =
   }
 
   container.innerHTML = html;
-  document.getElementById('cartCount').textContent    = items;
+  document.getElementById('cartCount').textContent    = ids.length;
   document.getElementById('cartSubtotal').textContent = '₹' + total.toFixed(2);
   document.getElementById('cartTotal').textContent    = '₹' + total.toFixed(2);
   document.getElementById('btnCompleteSale').disabled = false;
 }
 
-  const walkInCheckbox =
-    document.getElementById('walkInCustomer');
 
-  const phoneInput =
-    document.getElementById('customerPhone');
+/* ── WALK-IN CUSTOMER TOGGLE ─────────────────────────────────────────────────
+*/
+const walkInCheckbox = document.getElementById('walkInCustomer');
+const phoneInput     = document.getElementById('customerPhone');
+const nameInput      = document.getElementById('customerName');
 
-  const nameInput =
-    document.getElementById('customerName');
-
-  
 walkInCheckbox.addEventListener('change', function () {
-
-    if (this.checked) {
-
-      phoneInput.value = '';
-      nameInput.value = '';
-
-      phoneInput.disabled = true;
-      nameInput.disabled = true;
-
-      nameInput.placeholder = 'Walk-in Customer';
-
-      document.getElementById('customerStatus').innerHTML = '';
-
+  if (this.checked) {
+    phoneInput.value       = '';
+    nameInput.value        = '';
+    phoneInput.disabled    = true;
+    nameInput.disabled     = true;
+    nameInput.placeholder  = 'Walk-in Customer';
+    document.getElementById('customerStatus').innerHTML = '';
   } else {
-
-    phoneInput.disabled = false;
-    nameInput.disabled = false;
-
+    phoneInput.disabled   = false;
+    nameInput.disabled    = false;
     nameInput.placeholder = 'Enter customer name';
-
   }
 });
+
+// Apply initial state (checkbox starts checked)
 if (walkInCheckbox.checked) {
-    phoneInput.disabled = true;
-    nameInput.disabled = true;
+  phoneInput.disabled = true;
+  nameInput.disabled  = true;
 }
 
 
-/* ── COMPLETE SALE ───────────────────────────────────────────────────── */
-document.getElementById('customerPhone')
-.addEventListener('input', async function () {
+/* ── CUSTOMER PHONE LOOKUP ───────────────────────────────────────────────────
+*/
+phoneInput.addEventListener('input', async function () {
+  this.value = this.value.replace(/\D/g, '').slice(0, 10);
+  const phone = this.value;
 
-    this.value = this.value
-        .replace(/\D/g, '')
-        .slice(0, 10);
+  if (phone.length !== 10) {
+    document.getElementById('customerStatus').innerHTML = '';
+    return;
+  }
 
-    const phone = this.value;
+  const res  = await fetch('/sales/customer/' + phone);
+  const data = await res.json();
 
-    if (phone.length !== 10) {
-
-        document.getElementById('customerStatus').innerHTML = '';
-        return;
-    }
-    console.log(
-    "NAME:",
-    document.getElementById('customerName').value
-);
-
-console.log(
-    "PHONE:",
-    phone
-);
-    const res = await fetch('/sales/customer/' + phone);
-    const data = await res.json();
-
-    if (data.exists) {
-        document.getElementById('customerName').value = data.name;
-        document.getElementById('customerName').readOnly = true;
-        document.getElementById('customerStatus').innerHTML = `
-            <div style="color:green;font-weight:bold;">
-                ✓ Existing Customer<br>
-                ID: ${data.customer_id}<br>
-                Name: ${data.name}
-            </div>
-        `;
-
-    } else {
-        
-        document.getElementById('customerName').readOnly = false;
-
-        document.getElementById('customerStatus').innerHTML = `
-            <div style="color:orange;font-weight:bold;">
-                New Customer
-            </div>
-        `;
-    }
-
+  if (data.exists) {
+    nameInput.value    = data.name;
+    nameInput.readOnly = true;
+    document.getElementById('customerStatus').innerHTML =
+      `<span style="color:var(--success);font-weight:600;">✓ Existing Customer — ${data.name}</span>`;
+  } else {
+    nameInput.readOnly = false;
+    document.getElementById('customerStatus').innerHTML =
+      `<span style="color:var(--warning);font-weight:600;">New customer — will be saved</span>`;
+  }
 });
+
+
+/* ── COMPLETE SALE ───────────────────────────────────────────────────────────
+*/
 async function completeSale() {
-  const ids  = Object.keys(cart);
+  const ids = Object.keys(cart);
   if (!ids.length) return;
 
-  const cartArr   = ids.map(id => ({ product_id: parseInt(id), quantity: cart[id].qty }));
-  const payMode   = document.getElementById('paymentMode').value;
-  const phone =
-    document.getElementById('customerPhone').value.trim();
+  const walkIn = walkInCheckbox.checked;
+  const phone  = phoneInput.value.trim();
 
-  const walkIn =
-    document.getElementById('walkInCustomer').checked;
-  const btn       = document.getElementById('btnCompleteSale');
-if (!walkIn) {
-
-    if (!/^\d{10}$/.test(phone)) {
-
-        alert(
-            'Phone number must be exactly 10 digits'
-        );
-
-        return;
-    }
+  if (!walkIn && !/^\d{10}$/.test(phone)) {
+    alert('Phone number must be exactly 10 digits');
+    return;
   }
-  btn.disabled   = true;
-  btn.textContent = 'Processing…';
-  
-  
 
-  
+  // Build cart array — include unit_type per item
+  const cartArr = ids.map(id => ({
+    product_id: parseInt(id),
+    quantity:   cart[id].qty,
+    unit_type:  cart[id].unit_type,
+  }));
+
+  const btn = document.getElementById('btnCompleteSale');
+  btn.disabled    = true;
+  btn.textContent = 'Processing…';
 
   try {
     const res  = await fetch('/sales/complete', {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-         cart: cartArr,
-         payment_mode: payMode,
-         discount: document.getElementById('discount').value,
-
-         customer_phone: walkIn ? '' : phone,
-         customer_name: walkIn ? '' :
-        document.getElementById('customerName').value.trim()
-})
-    }); 
+        cart:            cartArr,
+        payment_mode:    document.getElementById('paymentMode').value,
+        discount:        document.getElementById('discount').value,
+        customer_phone:  walkIn ? '' : phone,
+        customer_name:   walkIn ? '' : nameInput.value.trim(),
+      }),
+    });
     const data = await res.json();
 
     if (data.success) {
-      showMsg('✓ Sale #' + data.order_id + ' completed! Total: ₹' + data.total.toFixed(2), 'success');
       clearCart();
-
-      // Open receipt page
-       window.location.href = '/sales/receipt/' + data.order_id;
-    } 
-    else {
+      window.location.href = '/sales/receipt/' + data.order_id;
+    } else {
       showMsg('✗ ' + data.message, 'error');
     }
   } catch (err) {
-    console.log("ERROR:", err);
-    alert("ERROR: " + err);
     showMsg('Network error. Please try again.', 'error');
- }
+  }
+
   btn.disabled    = false;
   btn.textContent = 'Complete Sale';
 }
 
-/* ── FILTER ──────────────────────────────────────────────────────────── */
+
+/* ── FILTER ──────────────────────────────────────────────────────────────────
+*/
 let activeCategory = '';
 
 function filterByCategory(cat, btn) {
@@ -470,21 +887,24 @@ function filterByCategory(cat, btn) {
 function filterProducts() {
   const search = document.getElementById('productSearch').value.toLowerCase();
   document.querySelectorAll('.product-card').forEach(card => {
-    const name = card.dataset.name.toLowerCase();
-    const cat  = card.dataset.category;
+    const name      = card.dataset.name.toLowerCase();
+    const cat       = card.dataset.category;
     const matchSearch = !search || name.includes(search);
     const matchCat    = !activeCategory || cat === activeCategory;
     card.style.display = matchSearch && matchCat ? '' : 'none';
   });
 }
 
-/* ── MESSAGES ────────────────────────────────────────────────────────── */
+
+/* ── MESSAGES ────────────────────────────────────────────────────────────────
+*/
 function showMsg(text, type) {
-  const el = document.getElementById('saleMessage');
+  const el   = document.getElementById('saleMessage');
   el.textContent = text;
-  el.style.color = type === 'success' ? 'var(--success)' :
-                   type === 'warning' ? 'var(--warning)' : 'var(--danger)';
-  setTimeout(() => { el.textContent = ''; }, 5000);
+  el.style.color = type === 'success' ? 'var(--success)'
+                 : type === 'warning' ? 'var(--warning)'
+                 : 'var(--danger)';
+  setTimeout(() => { el.textContent = ''; }, 4000);
 }
 </script>
 {% endblock %}
