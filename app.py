@@ -25,11 +25,13 @@ def create_app():
     # Register blueprints
     from routes.main import main_bp
     from routes.products import products_bp
+    from routes.suppliers import suppliers_bp
     from routes.sales import sales_bp
     from routes.orders import orders_bp
     from routes.dashboard import dashboard_bp
     from routes.analytics import analytics_bp
     app.register_blueprint(customers_bp, url_prefix='/customers')
+    app.register_blueprint(suppliers_bp, url_prefix='/suppliers')
 
     app.register_blueprint(main_bp)
     app.register_blueprint(products_bp, url_prefix='/products')

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Management</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+
+<div class="page-container">
+
+    <div class="page-header">
+        <div>
+            <h1>Supplier Management</h1>
+            <p>Manage suppliers and vendor information.</p>
+        </div>
+
+        <a href="#" class="btn btn-primary">
+            + Add Supplier
+        </a>
+    </div>
+
+    <div class="table-card">
+
+        <div class="table-toolbar">
+
+            <input
+                type="text"
+                class="form-control"
+                placeholder="Search suppliers...">
+
+        </div>
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>GST No.</th>
+                    <th>Total Purchase</th>
+                    <th>Due</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                <tr>
+                    <td>Agro Fresh</td>
+                    <td>9876543210</td>
+                    <td>agro@email.com</td>
+                    <td>18ABCDE1234F1Z5</td>
+                    <td>₹52,300</td>
+                    <td>₹0</td>
+                    <td>Edit | Delete</td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+</html>

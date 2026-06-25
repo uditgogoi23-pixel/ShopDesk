@@ -2,148 +2,290 @@
 
 {% block content %}
 
-<div class="page-header">
-<div class="kpi-grid">
+<!-- ── PAGE HEADER ── -->
 <div class="page-header">
     <div class="page-header-left">
         <h1>Purchase History</h1>
-        <p>Track purchases, suppliers and GST credits.</p>
+        <p>Track purchases, supplier invoices and GST credits.</p>
     </div>
-</div>    
-    <div class="stat-card">
-        <h3>💰 Purchase Value</h3>
-    <p>
-    ₹{{ "{:,.2f}".format(purchase_value) }}
-    </p>
+    <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+        </button>
+        <a href="{{ url_for('products.add') }}" class="btn btn-primary btn-sm">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Purchase
+        </a>
+    </div>
+</div>
+
+<!-- ── KPI GRID ── -->
+<div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 24px;">
+
+    <div class="kpi-card" style="--kpi-accent: #f59e0b;">
+        <div class="kpi-label">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Purchase Value
+        </div>
+        <div class="kpi-value">₹{{ "{:,.2f}".format(purchase_value) }}</div>
+        <div class="kpi-sub">Total incl. GST</div>
     </div>
 
-    <div class="stat-card">
-        <h3>Total Quantity</h3>
-        <p>{{ total_quantity|int }}</p>
+    <div class="kpi-card" style="--kpi-accent: #3b82f6;">
+        <div class="kpi-label">
+            <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Total Quantity
+        </div>
+        <div class="kpi-value">{{ total_quantity|int }}</div>
+        <div class="kpi-sub">Units received</div>
     </div>
 
-    <div class="stat-card">
-        <h3>Suppliers</h3>
-        <p>{{ supplier_count }}</p>
+    <div class="kpi-card" style="--kpi-accent: #8b5cf6;">
+        <div class="kpi-label">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Suppliers
+        </div>
+        <div class="kpi-value">{{ supplier_count }}</div>
+        <div class="kpi-sub">Active vendors</div>
     </div>
 
-    <div class="stat-card">
-    <h3>Total GST Paid</h3>
-    <p>₹{{ "%.2f"|format(total_gst) }}</p>
+    <div class="kpi-card" style="--kpi-accent: #10b981;">
+        <div class="kpi-label">
+            <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Total GST Paid
+        </div>
+        <div class="kpi-value">₹{{ "%.2f"|format(total_gst) }}</div>
+        <div class="kpi-sub">Input tax total</div>
+    </div>
+
+    <div class="kpi-card" style="--kpi-accent: #f97316;">
+        <div class="kpi-label">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Pending Credit
+        </div>
+        <div class="kpi-value">₹{{ "%.2f"|format(pending_gst) }}</div>
+        <div class="kpi-sub">Awaiting claim</div>
+    </div>
+
+    <div class="kpi-card" style="--kpi-accent: #64748b;">
+        <div class="kpi-label">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Claimed Credit
+        </div>
+        <div class="kpi-value">₹{{ "%.2f"|format(claimed_gst) }}</div>
+        <div class="kpi-sub">This period</div>
+    </div>
+
 </div>
 
-<div class="stat-card">
-    <h3>Pending GST Credit</h3>
-    <p>₹{{ "%.2f"|format(pending_gst) }}</p>
-</div>
+<!-- ── PURCHASE RECORDS TABLE CARD ── -->
+<div class="card">
 
-<div class="stat-card">
-    <h3>Claimed GST Credit</h3>
-    <p>₹{{ "%.2f"|format(claimed_gst) }}</p>
-</div>
-</div>
-
-</div>
-<div class="table-card">
-
-    <div class="table-header">
+    <div class="card-header">
         <div>
-            <h2>Purchase Records</h2>
-            <p>View and manage all your purchase transactions.</p>
+            <div class="card-title">Purchase Records</div>
+            <div class="card-subtitle">View and manage all your purchase transactions.</div>
+        </div>
+        <div class="d-flex" style="gap: 8px; align-items: center;">
+            <select class="filter-sel" id="supplierFilter">
+                <option value="">All Suppliers</option>
+                {% for e in entries %}
+                <option value="{{ e.supplier_name }}">{{ e.supplier_name }}</option>
+                {% endfor %}
+            </select>
+            <select class="filter-sel" id="statusFilter">
+                <option value="">All Status</option>
+                <option value="claimed">Claimed</option>
+                <option value="pending">Pending</option>
+            </select>
         </div>
     </div>
 
-<div class="toolbar">
-
-    <div class="search-box">
-        <span>🔍</span>
-
-        <input
-            type="text"
-            id="purchaseSearch"
-            class="form-control"
-            placeholder="Search supplier or product...">
-
+    <!-- TOOLBAR -->
+    <div class="table-toolbar">
+        <div class="search-wrap">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+                type="text"
+                id="purchaseSearch"
+                class="search-input"
+                placeholder="Search supplier or product…">
+        </div>
+        <div class="export-group">
+            <button class="export-btn" onclick="exportExcel()">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Excel
+            </button>
+            <button class="export-btn" onclick="exportPDF()">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                PDF
+            </button>
+            <button class="export-btn" onclick="window.print()">
+                <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                Print
+            </button>
+        </div>
     </div>
 
-    <div class="toolbar-buttons">
+    <!-- TABLE -->
+    <div class="table-wrap">
+        <table id="purchaseTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Supplier</th>
+                    <th>Invoice</th>
+                    <th class="text-right">Price</th>
+                    <th>GST %</th>
+                    <th class="text-right">GST Amt</th>
+                    <th class="text-right">Invoice Total</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in entries %}
+                <tr>
+                    <td class="mono">{{ e.entry_date.strftime('%d-%m-%Y') }}</td>
+                    <td>
+                        <span style="font-weight: 600; color: var(--slate-800); font-size: 13px;">
+                            {{ e.product.product_name }}
+                        </span>
+                    </td>
+                    <td class="mono">{{ e.quantity_added }}</td>
+                    <td>{{ e.supplier_name or '—' }}</td>
+                    <td class="mono" style="color: var(--slate-500);">{{ e.invoice_no or '—' }}</td>
+                    <td class="mono text-right">₹{{ "%.2f"|format(e.purchase_price) }}</td>
+                    <td>
+                        <span class="badge badge-neutral">{{ "%.0f"|format(e.gst_percent) }}%</span>
+                    </td>
+                    <td class="mono text-right">₹{{ "%.2f"|format(e.gst_amount) }}</td>
+                    <td class="mono text-right" style="font-weight: 700; color: var(--slate-800);">
+                        ₹{{ "%.2f"|format(e.invoice_total) }}
+                    </td>
+                    <td>
+                        {% if e.gst_claimed %}
+                            <span class="badge badge-success">Claimed</span>
+                        {% else %}
+                            <span class="badge badge-warning">Pending</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
 
-        <button class="btn btn-success">
-            📊 Excel
-        </button>
-
-        <button class="btn btn-danger">
-            📄 PDF
-        </button>
-
-        <button class="btn btn-primary">
-            🖨 Print
-        </button>
-
-    </div>
-
-
-</div>
-<div style="height:16px;"></div>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Product</th>
-            <th>Qty</th>
-            <th>Supplier</th>
-            <th>Invoice</th>
-            <th>Price</th>
-            <th>GST %</th>
-            <th>GST</th>
-            <th>Invoice Total</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-
-    <tbody>
-        {% for e in entries %}
-        <tr>
-            <td>{{ e.entry_date.strftime('%d-%m-%Y') }}</td>
-            <td>{{ e.product.product_name }}</td>
-            <td>{{ e.quantity_added }}</td>
-            <td>{{ e.supplier_name }}</td>
-            <td>{{ e.invoice_no }}</td>
-            <td>₹{{ "%.2f"|format(e.purchase_price) }}</td>
-            <td>₹{{ "%.2f"|format(e.gst_percent) }}</td>
-            <td>₹{{ "%.2f"|format(e.gst_amount) }}</td>
-            <td>₹{{ "%.2f"|format(e.invoice_total) }}</td>
-            <td>
-            {% if e.gst_claimed %}
-            <span class="badge badge-success">✔ Claimed</span>
-                {% else %}
-            <span class="badge badge-warning">⏳ Pending</span>
+                {% if not entries %}
+                <tr>
+                    <td colspan="10">
+                        <div class="empty-state">
+                            <h3>No purchases found</h3>
+                            <p>Add your first purchase to get started.</p>
+                        </div>
+                    </td>
+                </tr>
                 {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- TABLE FOOTER -->
+    <div class="table-footer">
+        <span class="table-count" id="rowCount">
+            Showing {{ entries|length }} record{{ 's' if entries|length != 1 else '' }}
+        </span>
+        <div class="pagination" id="pagination"></div>
+    </div>
 
 </div>
+
 <script>
-document.getElementById("searchPurchase").addEventListener("keyup", function () {
+(function () {
+    const searchInput = document.getElementById('purchaseSearch');
+    const supplierSel = document.getElementById('supplierFilter');
+    const statusSel   = document.getElementById('statusFilter');
+    const tbody       = document.querySelector('#purchaseTable tbody');
+    const rowCountEl  = document.getElementById('rowCount');
+    const pagination  = document.getElementById('pagination');
 
-    let value = this.value.toLowerCase();
-    let rows = document.querySelectorAll("tbody tr");
+    const ROWS_PER_PAGE = 15;
+    let currentPage     = 1;
 
-    rows.forEach(function(row) {
+    function allRows() {
+        return Array.from(tbody.querySelectorAll('tr'));
+    }
 
-        let text = row.textContent.toLowerCase();
+    function filterRows() {
+        const q        = searchInput.value.toLowerCase();
+        const supplier = supplierSel.value.toLowerCase();
+        const status   = statusSel.value.toLowerCase();
 
-        if (text.includes(value)) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
+        allRows().forEach(row => {
+            const text          = row.textContent.toLowerCase();
+            const matchQ        = !q        || text.includes(q);
+            const matchSupplier = !supplier || text.includes(supplier);
+            const matchStatus   = !status   || text.includes(status);
+            row.dataset.visible = (matchQ && matchSupplier && matchStatus) ? '1' : '0';
+        });
+
+        currentPage = 1;
+        renderPage();
+    }
+
+    function visibleRows() {
+        return allRows().filter(r => r.dataset.visible !== '0');
+    }
+
+    function renderPage() {
+        const rows  = visibleRows();
+        const total = rows.length;
+        const pages = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
+        const start = (currentPage - 1) * ROWS_PER_PAGE;
+        const end   = start + ROWS_PER_PAGE;
+
+        allRows().forEach(r => r.style.display = 'none');
+        rows.slice(start, end).forEach(r => r.style.display = '');
+
+        rowCountEl.textContent = total === 0
+            ? 'No records found'
+            : `Showing ${Math.min(end, total)} of ${total} record${total !== 1 ? 's' : ''}`;
+
+        pagination.innerHTML = '';
+        if (pages <= 1) return;
+
+        const mkBtn = (label, page, active) => {
+            const b = document.createElement('button');
+            b.className = 'page-link' + (active ? ' active' : '');
+            b.textContent = label;
+            b.addEventListener('click', () => { currentPage = page; renderPage(); });
+            return b;
+        };
+
+        if (currentPage > 1) pagination.appendChild(mkBtn('‹', currentPage - 1, false));
+        for (let i = 1; i <= pages; i++) {
+            pagination.appendChild(mkBtn(i, i, i === currentPage));
         }
+        if (currentPage < pages) pagination.appendChild(mkBtn('›', currentPage + 1, false));
+    }
 
+    /* deduplicate supplier dropdown */
+    const seen = new Set();
+    Array.from(supplierSel.options).forEach(opt => {
+        if (!opt.value) return;
+        if (seen.has(opt.value)) opt.remove();
+        else seen.add(opt.value);
     });
 
-});
+    searchInput.addEventListener('input',  filterRows);
+    supplierSel.addEventListener('change', filterRows);
+    statusSel.addEventListener('change',   filterRows);
+
+    allRows().forEach(r => r.dataset.visible = '1');
+    renderPage();
+
+    window.exportExcel = function () { alert('Export to Excel — wire up your endpoint here.'); };
+    window.exportPDF   = function () { alert('Export to PDF — wire up your endpoint here.'); };
+}());
 </script>
+
 {% endblock %}
