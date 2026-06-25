@@ -11,6 +11,7 @@ CHANGES (Migration 001):
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from extensions import db
 from models import Product, StockEntry, UNIT_TYPES
+from sqlalchemy import func
 
 products_bp = Blueprint('products', __name__)
 
@@ -48,7 +49,7 @@ def index():
     # Use per-product reorder_level instead of hardcoded 10
     low_stock = [p for p in products if p.is_low_stock]
     inventory_value = sum(
-    float(p.stock) * float(p.cost_price or 0)
+    float(p.stock) * float(p.price or 0)
     for p in products
     )
     return render_template(
@@ -75,7 +76,10 @@ def add():
         unit_type     = request.form.get('unit_type', 'Units')
         cost_price    = request.form.get('cost_price', 0) or 0
         reorder_level = request.form.get('reorder_level', 10) or 10
-
+        discount_type = request.form.get("discount_type", "none")
+        discount_value = request.form.get("discount_value", 0) or 0
+        
+        
         if not name or not price:
             flash('Product name and price are required.', 'danger')
             return render_template('products/add.html',
@@ -88,13 +92,30 @@ def add():
             stock=float(stock),
             unit_type=unit_type,
             cost_price=float(cost_price),
+            discount_type=discount_type,
+            discount_value=float(discount_value),
             reorder_level=int(reorder_level),
         )
+        existing = Product.query.filter(
+        func.lower(Product.product_name) == name.lower(),
+        func.lower(Product.category) == category.lower()
+        ).first()
+
+        if existing:
+            flash("A product with the same name and category already exists.", "danger")
+            return render_template(
+            "products/add.html",
+            categories=CATEGORIES,
+            unit_types=UNIT_TYPES
+        )
+
         db.session.add(product)
         db.session.commit()
+
         flash(f'✓ Product "{name}" added successfully.', 'success')
         return redirect(url_for('products.index'))
 
+        
     return render_template('products/add.html',
                            categories=CATEGORIES, unit_types=UNIT_TYPES)
 
@@ -105,20 +126,44 @@ def edit(product_id):
     product = Product.query.get_or_404(product_id)
 
     if request.method == 'POST':
-        product.product_name  = request.form.get('product_name', product.product_name).strip()
-        product.category      = request.form.get('category', product.category)
-        product.price         = float(request.form.get('price', product.price))
-        product.stock         = float(request.form.get('stock', product.stock))
-        product.unit_type     = request.form.get('unit_type', product.unit_type)
-        product.cost_price    = float(request.form.get('cost_price', 0) or 0)
+        product.product_name = request.form.get('product_name', product.product_name).strip()
+        product.category = request.form.get('category', product.category).strip()
+        product.price = float(request.form.get('price', product.price))
+        product.stock = float(request.form.get('stock', product.stock))
+        product.unit_type = request.form.get('unit_type', product.unit_type)
+        product.cost_price = float(request.form.get('cost_price', 0) or 0)
         product.reorder_level = int(request.form.get('reorder_level', 10) or 10)
+        discount_type = request.form.get("discount_type", "none")
+        discount_value = float(request.form.get("discount_value", 0) or 0)
+
+        existing = Product.query.filter(
+            func.lower(Product.product_name) == product.product_name.lower(),
+            func.lower(Product.category) == product.category.lower(),
+            Product.product_id != product.product_id
+        ).first()
+
+        if existing:
+            flash("A product with the same name and category already exists.", "danger")
+            return render_template(
+                "products/edit.html",
+                product=product,
+                categories=CATEGORIES,
+                unit_types=UNIT_TYPES
+            )
 
         db.session.commit()
-        flash(f'✓ Product "{product.product_name}" updated.', 'success')
-        return redirect(url_for('products.index'))
+        flash(f'✓ Product "{product.product_name}" updated.', "success")
+        return redirect(url_for("products.index"))
 
-    return render_template('products/edit.html',
-                           product=product, categories=CATEGORIES, unit_types=UNIT_TYPES)
+    return render_template(
+        "products/edit.html",
+        product=product,
+        categories=CATEGORIES,
+        unit_types=UNIT_TYPES
+    )
+
+        
+    
 
 
 # ─── DELETE PRODUCT ───────────────────────────────────────────────────────────
@@ -184,10 +229,7 @@ def refill_stock(product_id):
             gst_claimed=False,
         )
         db.session.add(entry)
-        db.session.commit()
-
-        flash('✓ Stock updated successfully!', 'success')
-        return redirect(url_for('products.index'))
+        
 
     return render_template('products/refill.html', product=product)
 # ==========================================

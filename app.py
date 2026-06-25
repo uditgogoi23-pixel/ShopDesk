@@ -8,6 +8,8 @@ from datetime import datetime
 from config import Config
 from extensions import db, migrate
 from routes.customers import customers_bp
+from routes.imports import imports_bp
+from routes.export import export_bp
 
 def create_app():
     app = Flask(__name__)
@@ -32,6 +34,8 @@ def create_app():
     from routes.analytics import analytics_bp
     app.register_blueprint(customers_bp, url_prefix='/customers')
     app.register_blueprint(suppliers_bp, url_prefix='/suppliers')
+    app.register_blueprint(imports_bp, url_prefix="/imports")
+    app.register_blueprint(export_bp, url_prefix="/export")
 
     app.register_blueprint(main_bp)
     app.register_blueprint(products_bp, url_prefix='/products')

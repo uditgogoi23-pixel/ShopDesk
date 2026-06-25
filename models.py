@@ -52,6 +52,8 @@ class Product(db.Model):
                               comment='Units | kg | g | litre | ml | pack')
     cost_price    = db.Column(db.Numeric(10, 2), nullable=False, default=0.00,
                               comment='Purchase price — used for profit calculation')
+    discount_type = db.Column(db.String(10), default="none")
+    discount_value = db.Column(db.Numeric(10, 2), default=0)
     reorder_level = db.Column(db.Integer, nullable=False, default=10,
                               comment='Low-stock alert threshold')
 

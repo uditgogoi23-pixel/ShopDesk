@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Import Products{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Import Products</h1>
+        <p>Upload an Excel file to add multiple products.</p>
+    </div>
+</div>
+
+<div class="card" style="padding:30px; max-width:700px;">
+    <a href="{{ url_for('imports.download_template') }}"
+   class="btn btn-secondary"
+   style="margin-bottom:20px;">
+    📥 Download Excel Template
+</a>
+
+    <form method="POST" enctype="multipart/form-data">
+
+        <label><strong>Select Excel File</strong></label>
+
+        <input
+            type="file"
+            name="excel_file"
+            accept=".xlsx,.xls,.csv"
+            class="form-control"
+            style="margin-top:10px; margin-bottom:20px;">
+
+        <button type="submit" class="btn btn-primary">
+            Import Products
+        </button>
+
+    </form>
+
+    <hr style="margin:30px 0;">
+
+    <h3>Instructions</h3>
+
+    <ul>
+        <li>Supported formats: Excel (.xlsx, .xls) and CSV.</li>
+        <li>Each row represents one product.</li>
+        <li>Duplicate products will be skipped (coming soon).</li>
+    </ul>
+
+</div>
+
+
+
+
+
+
+
+{% if preview is not none %}
+
+<hr>
+
+<h3>Preview</h3>
+
+<table border="1">
+
+<thead>
+<tr>
+{% for col in columns %}
+<th>{{ col }}</th>
+{% endfor %}
+</tr>
+</thead>
+
+<tbody>
+{% for row in preview %}
+<tr>
+{% for col in columns %}
+<td>{{ row[col] }}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</tbody>
+
+</table>
+
+{% endif %}
+{% endblock %}
