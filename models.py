@@ -226,6 +226,29 @@ class StockEntry(db.Model):
     nullable=False,
     default=0
     )
+    gst_percent = db.Column(
+    db.Numeric(5,2),
+    nullable=False,
+    default=0
+    )
+
+    gst_amount = db.Column(
+    db.Numeric(10,2),
+    nullable=False,
+    default=0
+    )
+
+    invoice_total = db.Column(
+    db.Numeric(10,2),
+    nullable=False,
+    default=0
+    )
+
+    gst_claimed = db.Column(
+    db.Boolean,
+    nullable=False,
+    default=False
+    )
     entry_date     = db.Column(db.DateTime, default=datetime.now)
 
     def to_dict(self):
@@ -238,3 +261,94 @@ class StockEntry(db.Model):
             'remarks':        self.remarks,
             'entry_date':     str(self.entry_date),
         }
+class BusinessSettings(db.Model):
+    __tablename__ = 'business_settings'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Business Info
+    shop_name = db.Column(db.String(120), nullable=False, default="ShopDesk")
+    owner_name = db.Column(db.String(120))
+    phone = db.Column(db.String(20))
+    email = db.Column(db.String(120))
+    address = db.Column(db.Text)
+
+    # Business Type
+    business_type = db.Column(
+        db.String(20),
+        nullable=False,
+        default="Retail"
+    )
+
+    # GST
+    gst_enabled = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
+
+    gst_mode = db.Column(
+        db.String(20),
+        nullable=False,
+        default="Inclusive"
+    )
+
+    gst_number = db.Column(db.String(30))
+    default_gst_rate = db.Column(
+    db.Numeric(5,2),
+    nullable=False,
+    default=18.00
+    )
+    gst_registration_type = db.Column(
+    db.String(20),
+    nullable=False,
+    default="Regular"
+    )
+    currency = db.Column(
+        db.String(10),
+        nullable=False,
+        default="INR"
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.now
+    )
+
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.now,
+        onupdate=datetime.now
+    )
+    def __repr__(self):
+        return "<BusinessSettings>"
+
+class Supplier(db.Model):
+    __tablename__ = "suppliers"
+
+    supplier_id = db.Column(
+    db.Integer,
+    primary_key=True,
+    autoincrement=True
+    )
+
+    supplier_name = db.Column(
+        db.String(120),
+        nullable=False
+    )
+
+    phone = db.Column(db.String(20))
+
+    email = db.Column(db.String(120))
+
+    gst_number = db.Column(db.String(30))
+
+    address = db.Column(db.Text)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.now
+    )
+
+    def __repr__(self):
+        return f"<Supplier {self.supplier_name}>"

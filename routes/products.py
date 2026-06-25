@@ -160,8 +160,12 @@ def refill_stock(product_id):
         supplier_name = request.form.get('supplier_name', '')
         invoice_no = request.form.get('invoice_no', '')
         purchase_price = float(request.form.get('purchase_price') or 0)
+        gst_percent = float(request.form.get('gst_percent') or 0)
         previous_stock = float(product.stock)
         new_stock      = previous_stock + quantity
+        subtotal = quantity * purchase_price
+        gst_amount = subtotal * gst_percent / 100
+        invoice_total = subtotal + gst_amount
 
         product.stock = new_stock
 
@@ -174,6 +178,10 @@ def refill_stock(product_id):
             supplier_name=supplier_name,
             invoice_no=invoice_no,
             purchase_price=purchase_price,
+            gst_percent=gst_percent,
+            gst_amount=gst_amount,
+            invoice_total=invoice_total,
+            gst_claimed=False,
         )
         db.session.add(entry)
         db.session.commit()
@@ -194,28 +202,47 @@ def purchase_history():
     ).all()
 
     purchase_value = sum(
-        float(e.quantity_added) * float(e.purchase_price)
+    float(e.invoice_total or 0)
+    for e in entries
+)
+
+    total_gst = sum(
+        float(e.gst_amount or 0)
         for e in entries
-    )
-    print("PURCHASE VALUE =", purchase_value)
+)
+
+    pending_gst = sum(
+        float(e.gst_amount or 0)
+        for e in entries
+        if not e.gst_claimed
+)
+
+    claimed_gst = sum(
+        float(e.gst_amount or 0)
+        for e in entries
+        if e.gst_claimed
+)
 
     total_quantity = sum(
         float(e.quantity_added)
         for e in entries
-    )
+)
 
     supplier_count = len(
         set(
-            e.supplier_name
-            for e in entries
-            if e.supplier_name
-        )
+        e.supplier_name
+        for e in entries
+        if e.supplier_name
     )
+)
 
     return render_template(
-        'products/purchase_history.html',
-        entries=entries,
-        purchase_value=purchase_value,
-        total_quantity=total_quantity,
-        supplier_count=supplier_count
-    )
+    "products/purchase_history.html",
+    entries=entries,
+    purchase_value=purchase_value,
+    total_quantity=total_quantity,
+    supplier_count=supplier_count,
+    total_gst=total_gst,
+    pending_gst=pending_gst,
+    claimed_gst=claimed_gst
+)
