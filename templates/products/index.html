@@ -86,6 +86,7 @@
     <thead>
       <tr>
         <th>ID</th>
+        <th>Image</th>
         <th>Product Name</th>
         <th>Category</th>
         <th class="text-right">Price</th>
@@ -100,7 +101,17 @@
       {% for p in products %}
       <tr>
         <td class="text-muted mono">#{{ p.product_id }}</td>
-        <td><strong>{{ p.product_name }}</strong></td>
+
+<td>
+    <img
+        src="{{ url_for('static', filename='product_images/' + p.image) }}"
+        width="50"
+        height="50"
+        style="object-fit:cover; border-radius:8px;"
+    >
+</td>
+
+<td><strong>{{ p.product_name }}</strong></td>
         <td>
           {% if p.category %}
             <span class="badge badge-neutral">{{ p.category }}</span>

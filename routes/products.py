@@ -12,6 +12,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from extensions import db
 from models import Product, StockEntry, UNIT_TYPES
 from sqlalchemy import func
+import os
+from werkzeug.utils import secure_filename
+from flask import current_app
+from PIL import Image
 
 products_bp = Blueprint('products', __name__)
 
@@ -76,8 +80,11 @@ def add():
         unit_type     = request.form.get('unit_type', 'Units')
         cost_price    = request.form.get('cost_price', 0) or 0
         reorder_level = request.form.get('reorder_level', 10) or 10
+        image = request.files.get("product_image")
+        filename = "default_product.png"
         discount_type = request.form.get("discount_type", "none")
         discount_value = request.form.get("discount_value", 0) or 0
+        
         
         
         if not name or not price:
@@ -85,17 +92,27 @@ def add():
             return render_template('products/add.html',
                                    categories=CATEGORIES, unit_types=UNIT_TYPES)
 
-        product = Product(
-            product_name=name,
-            category=category,
-            price=float(price),
-            stock=float(stock),
-            unit_type=unit_type,
-            cost_price=float(cost_price),
-            discount_type=discount_type,
-            discount_value=float(discount_value),
-            reorder_level=int(reorder_level),
-        )
+        if image and image.filename:
+            filename = secure_filename(image.filename)
+            filepath = os.path.join(
+                current_app.config["UPLOAD_FOLDER"],
+                filename
+    )
+
+            img = Image.open(image)
+
+            img.thumbnail((300, 300))
+
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+
+            img.save(
+                filepath,
+                "JPEG",
+                quality=85,
+                optimize=True
+            )
+                    
         existing = Product.query.filter(
         func.lower(Product.product_name) == name.lower(),
         func.lower(Product.category) == category.lower()
@@ -108,7 +125,18 @@ def add():
             categories=CATEGORIES,
             unit_types=UNIT_TYPES
         )
-
+        product = Product(
+            product_name=name,
+            category=category,
+            price=float(price),
+            stock=float(stock),
+            unit_type=unit_type,
+            cost_price=float(cost_price),
+            discount_type=discount_type,
+            discount_value=float(discount_value),
+            reorder_level=int(reorder_level),
+            image=filename,
+        )
         db.session.add(product)
         db.session.commit()
 

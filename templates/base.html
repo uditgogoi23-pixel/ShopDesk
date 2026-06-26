@@ -66,25 +66,26 @@
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
          </svg>
       Suppliers
-</a>
+  </a>
+  
       <div class="nav-section-label">SALES</div>
       <a href="{{ url_for('orders.index') }}"
-         class="nav-item {% if request.blueprint == 'orders' %}active{% endif %}">
-        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 极简风格，注重实用性
+        class="nav-item {% if request.blueprint == 'orders' %}active{% endif %}">
+          <svg viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          Order History
       </a>
-        Order History
-      </a>
 
-        <a href="/customers"
-   class="nav-item {% if request.blueprint == 'customers' %}active{% endif %}">
-
-    <svg viewBox="0 0 24 24">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-        <circle cx="12" cy="7" r="4"></circle>
-    </svg>
-
-    Customers
-</a>
+       <a href="{{ url_for('customers.index') }}"
+          class="nav-item {% if request.blueprint == 'customers' %}active{% endif %}">
+            <svg viewBox="0 0 24 24">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            Customers
+        </a>
 
       <div class="nav-section-label">INSIGHTS</div>
       <a href="{{ url_for('analytics.index') }}"

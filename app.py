@@ -10,11 +10,18 @@ from extensions import db, migrate
 from routes.customers import customers_bp
 from routes.imports import imports_bp
 from routes.export import export_bp
+import os
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.config["UPLOAD_FOLDER"] = os.path.join(
+    app.root_path,
+    "static",
+    "product_images"
+)
 
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)

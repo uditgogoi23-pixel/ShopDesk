@@ -6,17 +6,25 @@
 
 <table border="1" cellpadding="10">
     <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Phone</th>
-    </tr>
+    <th>ID</th>
+    <th>Name</th>
+    <th>Phone</th>
+    <th>Actions</th>
+</tr>
 
     {% for c in customers %}
     <tr>
-        <td>{{ c.customer_id }}</td>
-        <td>{{ c.name }}</td>
-        <td>{{ c.phone }}</td>
-    </tr>
+    <td>{{ c.customer_id }}</td>
+    <td>{{ c.name }}</td>
+    <td>{{ c.phone }}</td>
+
+    <td>
+        <a href="{{ url_for('customers.history', customer_id=c.customer_id) }}"
+           class="btn btn-primary btn-sm">
+            History
+        </a>
+    </td>
+</tr>
     {% endfor %}
 </table>
 

@@ -279,14 +279,23 @@
     {% for p in products %}
 
     <div class="product-card {{ 'low-s' if p.is_low_stock else '' }}"
-        data-id="{{ p.product_id }}"
-        data-name="{{ p.product_name|lower }}"
-        data-price="{{ p.price }}"
-         data-stock="{{ p.stock }}"
-        data-unit="{{ p.unit_type }}"
-         data-category="{{ (p.category or '')|lower }}"
-        onclick="openQtyModal({{ p.product_id }}, '{{ p.product_name|e }}', {{ p.price }}, {{ p.stock }}, '{{ p.unit_type }}')">
-          <div class="pcard-category">{{ p.category or 'General' }}</div>
+     data-id="{{ p.product_id }}"
+     data-name="{{ p.product_name|lower }}"
+     data-price="{{ p.price }}"
+     data-stock="{{ p.stock }}"
+     data-unit="{{ p.unit_type }}"
+     data-category="{{ (p.category or '')|lower }}"
+     onclick="openQtyModal('{{ p.product_id }}','{{ p.product_name }}',{{ p.price }},{{ p.stock }},'{{ p.unit_type }}')">
+     
+
+    <div class="pcard-image">
+        <img src="{{ url_for('static', filename='product_images/' ~ (p.image or 'default_product.png')) }}"
+             alt="{{ p.product_name }}">
+    </div>
+
+    <div class="pcard-category">
+        {{ p.category or 'General' }}
+    </div>
           <div class="pcard-name">{{ p.product_name }}</div>
           <div class="pcard-price">₹{{ "%.2f"|format(p.price) }}</div>
           <div class="pcard-stock {{ 'low-s' if p.is_low_stock else '' }}">
