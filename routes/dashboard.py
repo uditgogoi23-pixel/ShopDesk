@@ -21,10 +21,16 @@ def _get_kpis():
  # ── Today's Revenue ─────────────────────────────────────────────
 
     today_rev = (
-        db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
-        .filter(Order.order_date == today)
-        .scalar()
+    db.session.query(
+        func.coalesce(
+            func.sum(OrderItem.selling_price * OrderItem.quantity),
+            0
+        )
     )
+    .join(Order, Order.order_id == OrderItem.order_id)
+    .filter(Order.order_date == today)
+    .scalar()
+)
 
     # ── Today's Profit ──────────────────────────────────────────────
 
@@ -54,10 +60,16 @@ def _get_kpis():
     # ── This Month Revenue ──────────────────────────────────────────
 
     month_rev = (
-        db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
-        .filter(Order.order_date >= month_start)
-        .scalar()
+    db.session.query(
+        func.coalesce(
+            func.sum(OrderItem.selling_price * OrderItem.quantity),
+            0
+        )
     )
+    .join(Order, Order.order_id == OrderItem.order_id)
+    .filter(Order.order_date >= month_start)
+    .scalar()
+)
 
     # ── This Month Profit ───────────────────────────────────────────
 
@@ -79,10 +91,17 @@ def _get_kpis():
     # ── Last Month Revenue ──────────────────────────────────────────
 
     last_rev = (
-        db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
-        .filter(Order.order_date.between(last_month_s, last_month_e))
-        .scalar()
+    db.session.query(
+        func.coalesce(
+            func.sum(OrderItem.selling_price * OrderItem.quantity),
+            0
+        )
     )
+    .join(Order, Order.order_id == OrderItem.order_id)
+    .filter(Order.order_date.between(last_month_s, last_month_e))
+    .scalar()
+)
+    margin_percent = 0 
     revenue_growth = 0
 
     if float(month_rev) > 0:
@@ -124,7 +143,7 @@ def _get_kpis():
             Product.product_name,
             Product.category,
             func.sum(OrderItem.quantity).label('units_sold'),
-            func.sum(OrderItem.quantity * Product.price).label('revenue'),
+            func.sum(OrderItem.quantity * OrderItem.selling_price).label('revenue'),
         )
         .join(OrderItem, Product.product_id == OrderItem.product_id)
         .join(Order, OrderItem.order_id == Order.order_id)
@@ -136,22 +155,23 @@ def _get_kpis():
     )
 
     # ── Monthly Revenue Trend (last 6 months) ─────────────────────────────────
+    # REPLACE the monthly_trend query with this:
     monthly_trend = [
-    {
-        'month': r.month,
-        'revenue': float(r.revenue)
-    }
-    for r in (
-        db.session.query(
-            func.date_format(Payment.payment_date, '%Y-%m').label('month'),
-            func.sum(Payment.amount).label('revenue'),
+        {
+            'month': r.month,
+            'revenue': float(r.revenue)
+        }
+        for r in (
+            db.session.query(
+                func.date_format(Payment.payment_date, '%Y-%m').label('month'),
+                func.sum(Payment.amount).label('revenue'),
+            )
+            .filter(Payment.payment_date >= today - timedelta(days=180))
+            .group_by(func.date_format(Payment.payment_date, '%Y-%m'))
+            .order_by(func.date_format(Payment.payment_date, '%Y-%m'))
+            .all()
         )
-        .filter(Payment.payment_date >= today - timedelta(days=180))
-        .group_by('month')
-        .order_by('month')
-        .all()
-    )
-]
+    ]
     # ── Recent Orders ─────────────────────────────────────────────────────────
     recent_orders = (Order.query
                      .order_by(desc(Order.order_id))

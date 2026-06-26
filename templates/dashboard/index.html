@@ -94,17 +94,15 @@
 </div>
   <div class="kpi-card" style="--kpi-accent: #3b82f6;">
     <div class="kpi-label">Monthly Revenue</div>
-    <div class="kpi-value">
-    ₹{{ "{:,.0f}".format(today_rev) }}
-</div>
+    <div class="kpi-value">₹{{ "{:,.0f}".format(month_rev) }}</div>
     <div class="kpi-sub">
-      {% if revenue_growth >= 0 %}
-        <span class="kpi-badge up">▲ {{ revenue_growth }}% vs last month</span>
-      {% else %}
-        <span class="kpi-badge down">▼ {{ revenue_growth|abs }}% vs last month</span>
-      {% endif %}
+        {% if revenue_growth >= 0 %}
+            <span class="kpi-badge up">▲ {{ revenue_growth }}% vs last month</span>
+        {% else %}
+            <span class="kpi-badge down">▼ {{ revenue_growth|abs }}% vs last month</span>
+        {% endif %}
     </div>
-  </div>
+</div>
 
   <div class="kpi-card" style="--kpi-accent: #10b981;">
     <div class="kpi-label">Total Products</div>
@@ -121,7 +119,7 @@
   <div class="kpi-card" style="--kpi-accent: #8b5cf6;">
     <div class="kpi-label">Inventory Value</div>
     <div class="kpi-value">
-    ₹{{ "{:,.0f}".format(month_rev) }}
+        ₹{{ "{:,.0f}".format(inv_value) }}
 </div>
     <div class="kpi-sub">Current stock × price</div>
   </div>
@@ -257,7 +255,7 @@
               </td>
               <td class="text-muted">{{ o.order_date.strftime('%d %b') if o.order_date else '—' }}</td>
               <td><span class="badge badge-success">{{ o.order_status }}</span></td>
-              <td class="text-right mono fw-bold">₹{{ "%.0f"|format(o.total_amount) }}</td>
+              <td class="text-right mono fw-bold">₹{{ "%.0f"|format(o.grand_total or 0) }}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -279,7 +277,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 (function() {
-  const trend = JSON.parse('{{ monthly_trend | tojson | tojson | safe }}');
+  const trend = {{ monthly_trend | tojson | safe }};
+
   if (!trend.length) return;
 
   const labels = trend.map(r => r.month);
