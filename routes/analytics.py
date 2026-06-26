@@ -116,9 +116,9 @@ def _monthly_growth():
     return result
 
 
-def _low_stock_alerts(threshold=10):
+def _low_stock_alerts():
     return (Product.query
-            .filter(Product.stock <= threshold)
+            .filter(Product.stock <= Product.reorder_level)
             .order_by(asc(Product.stock))
             .all())
 

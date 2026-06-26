@@ -257,7 +257,9 @@ def refill_stock(product_id):
             gst_claimed=False,
         )
         db.session.add(entry)
-        
+        db.session.commit()
+        flash(f'✓ Stock updated! {product.product_name} now has {new_stock} {product.unit_type}.', 'success')
+        return redirect(url_for('products.index'))
 
     return render_template('products/refill.html', product=product)
 # ==========================================

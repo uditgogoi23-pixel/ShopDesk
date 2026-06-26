@@ -11,7 +11,7 @@ CHANGES (Migration 001):
 from flask import (Blueprint, render_template, request,
                    redirect, url_for, flash, jsonify, session)
 from extensions import db
-from models import Product, Order, OrderItem, Payment, Customer
+from models import Product, Order, OrderItem, Payment, Customer, BusinessSettings
 from datetime import date
 
 sales_bp = Blueprint('sales', __name__)
@@ -101,10 +101,16 @@ def complete_sale():
         total += float(product.price) * qty
         cart_items.append({'product': product, 'quantity': qty, 'unit_type': unit_type})
 
-    discount      = round(total * (discount_percent / 100), 2)
+    discount       = round(total * (discount_percent / 100), 2)
     taxable_amount = total - discount
-    gst_amount    = round(taxable_amount * 0.18, 2)
-    grand_total   = taxable_amount + gst_amount
+
+    # Read GST from BusinessSettings instead of hardcoding 18%
+    settings   = BusinessSettings.query.first()
+    gst_enabled = settings.gst_enabled if settings else False
+    gst_rate    = float(settings.default_gst_rate) / 100 if settings else 0.0
+
+    gst_amount  = round(taxable_amount * gst_rate, 2) if gst_enabled else 0.0
+    grand_total = taxable_amount + gst_amount
 
     try:
         # ── 1. Create Order ───────────────────────────────────────────────────

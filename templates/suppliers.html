@@ -13,7 +13,7 @@
             <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Export
         </button>
-       <a href="#" class="btn btn-primary btn-sm">
+       <a href="{{ url_for('suppliers.add') }}" class="btn btn-primary btn-sm">
     <svg viewBox="0 0 24 24">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -81,6 +81,50 @@
     </div>
 
 </div>
+<!-- ── SUPPLIERS LIST ── -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <div>
+            <div class="card-title">Suppliers</div>
+            <div class="card-subtitle">All registered vendors.</div>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>GST Number</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for supplier in suppliers %}
+                <tr>
+                    <td>{{ supplier.supplier_name }}</td>
+                    <td>{{ supplier.phone or '—' }}</td>
+                    <td>{{ supplier.email or '—' }}</td>
+                    <td>{{ supplier.gst_number or '—' }}</td>
+                    <td>
+                        <a href="{{ url_for('suppliers.edit', supplier_id=supplier.supplier_id) }}" class="btn btn-sm btn-secondary">Edit</a>
+                        <form method="POST" action="{{ url_for('suppliers.delete', supplier_id=supplier.supplier_id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Delete {{ supplier.supplier_name }}?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align:center;">No suppliers added yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 
 <!-- ── PURCHASE RECORDS TABLE CARD ── -->
 <div class="card">

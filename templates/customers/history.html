@@ -2,130 +2,76 @@
 
 {% block content %}
 
-<div class="container mt-4">
-
-    <div class="row mb-4">
-
-    <div class="col-md-4">
-
-        <div class="card shadow-sm">
-
-            <div class="card-body">
-
-                <h3>{{ customer.name }}</h3>
-
-                <p class="text-muted">
-                    📞 {{ customer.phone }}
-                </p>
-
-            </div>
-
-        </div>
-
+<!-- PAGE HEADER -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 class="page-title">{{ customer.name }}</h1>
+        <p class="page-subtitle">📞 {{ customer.phone }}</p>
     </div>
-
-    <div class="col-md-8">
-
-        <div class="row">
-
-            <div class="col-md-4">
-
-                <div class="card shadow-sm">
-
-                    <div class="card-body text-center">
-
-                        <h6>Total Orders</h6>
-
-                        <h2>{{ total_orders }}</h2>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-4">
-
-                <div class="card shadow-sm">
-
-                    <div class="card-body text-center">
-
-                        <h6>Total Spent</h6>
-
-                        <h2>₹{{ "%.2f"|format(total_spent) }}</h2>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-4">
-
-                <div class="card shadow-sm">
-
-                    <div class="card-body text-center">
-
-                        <h6>Average Order</h6>
-
-                        <h2>₹{{ "%.2f"|format(avg_order) }}</h2>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
+    <a href="{{ url_for('customers.index') }}" class="btn btn-secondary btn-sm">← Back to Customers</a>
 </div>
-    <h4 class="mb-3">
-        Purchase History
-    </h4>
-    <table class="table table-striped table-hover align-middle">
 
-        <thead>
-        <tr>
-            <th>Invoice</th>
-            <th>Date</th>
-            <th>Total Amount</th>
-            <th>Action</th>
-        </tr>
-        </thead>
+<!-- KPI CARDS -->
+<div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+    <div class="kpi-card" style="--kpi-accent: #3b82f6;">
+        <div class="kpi-label">Total Orders</div>
+        <div class="kpi-value">{{ total_orders }}</div>
+        <div class="kpi-sub">All time</div>
+    </div>
+    <div class="kpi-card" style="--kpi-accent: #10b981;">
+        <div class="kpi-label">Total Spent</div>
+        <div class="kpi-value">₹{{ "%.2f"|format(total_spent) }}</div>
+        <div class="kpi-sub">Lifetime value</div>
+    </div>
+    <div class="kpi-card" style="--kpi-accent: #f59e0b;">
+        <div class="kpi-label">Average Order</div>
+        <div class="kpi-value">₹{{ "%.2f"|format(avg_order) }}</div>
+        <div class="kpi-sub">Per transaction</div>
+    </div>
+</div>
 
-        <tbody>
-
-        {% for order in orders %}
-
-        <tr>
-            <td>#{{ order.order_id }}</td>
-            <td>{{ order.order_date.strftime('%d %b %Y') }}</td>
-            <td>₹{{ "%.2f"|format(order.total_amount) }}</td>
-
-            <td>
-                <a href="{{ url_for('sales.receipt', order_id=order.order_id) }}"
-                class="btn btn-sm btn-primary">
-                    View Invoice
-                </a>
-            </td>
-        </tr>
-
-        {% else %}
-
-        <tr>
-            <td colspan="3" class="text-center">
-                No purchase history found.
-            </td>
-        </tr>
-
-        {% endfor %}
-
-        </tbody>
-
-    </table>
-
+<!-- PURCHASE HISTORY TABLE -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <div class="card-title">Purchase History</div>
+            <div class="card-subtitle">All orders placed by {{ customer.name }}</div>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice</th>
+                    <th>Date</th>
+                    <th class="text-right">Total Amount</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td class="mono">#{{ order.order_id }}</td>
+                    <td>{{ order.order_date.strftime('%d %b %Y') }}</td>
+                    <td class="mono text-right">₹{{ "%.2f"|format(order.total_amount) }}</td>
+                    <td>
+                        <a href="{{ url_for('sales.receipt', order_id=order.order_id) }}"
+                           class="btn btn-sm btn-primary">View Invoice</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4">
+                        <div class="empty-state">
+                            <h3>No purchase history found</h3>
+                            <p>This customer hasn't placed any orders yet.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 {% endblock %}

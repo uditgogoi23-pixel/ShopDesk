@@ -121,9 +121,8 @@ class Order(db.Model):
     @property
     def calculated_total(self):
         return sum(
-            float(item.product.price) * float(item.quantity)
+            float(item.unit_price) * float(item.quantity)
             for item in self.order_items
-            if item.product
         )
 
     def to_dict(self):
@@ -356,19 +355,3 @@ class Supplier(db.Model):
 
     def __repr__(self):
         return f"<Supplier {self.supplier_name}>"
-        class Supplier(db.Model):
-            __tablename__ = "suppliers"
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    name = db.Column(db.String(100), nullable=False)
-
-    phone = db.Column(db.String(15))
-
-    email = db.Column(db.String(120))
-
-    gst_number = db.Column(db.String(30))
-
-    address = db.Column(db.Text)
-
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
