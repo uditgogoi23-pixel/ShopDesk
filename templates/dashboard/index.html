@@ -15,29 +15,72 @@
 {% block content %}
 
 <!-- ── PAGE HEADER ──────────────────────────────────────────────────────── -->
-<div class="page-header">
-  <div class="page-header-left">
-    <h1>Business Overview</h1>
-    <p>Live metrics and performance snapshot</p>
-  </div>
+<div class="page-header dashboard-header">
+
+    <div class="page-header-left">
+
+        <div class="dashboard-greeting">
+            👋 Welcome back!
+        </div>
+
+        <h1 class="dashboard-title">
+            Business Overview
+        </h1>
+
+        <p class="dashboard-subtitle">
+            Live metrics and performance snapshot for your store.
+        </p>
+
+    </div>
+
+    <div class="dashboard-actions">
+
+    <a href="{{ url_for('products.add') }}" class="btn btn-outline">
+        📦 Add Product
+    </a>
+
+</div>
+
 </div>
 
 <!-- ── KPI CARDS ────────────────────────────────────────────────────────── -->
 <div class="kpi-grid">
 
-  <div class="kpi-card" style="--kpi-accent: #f59e0b;">
-    <div class="kpi-label">Today's Revenue</div>
-    <div class="kpi-value">₹{{ "%.0f"|format(today_rev) }}</div>
-    <div class="kpi-sub">{{ today_orders }} order{{ 's' if today_orders != 1 else '' }} today</div>
-  </div>
+  <div class="kpi-card" style="--kpi-accent:#f59e0b;">
+
+    <div class="kpi-top">
+
+        <div class="kpi-label">
+            Today's Revenue
+        </div>
+
+        <div class="kpi-icon">
+            💰
+        </div>
+
+    </div>
+
+    <div class="kpi-value">
+        ₹{{ "{:,.0f}".format(today_rev) }}
+    </div>
+
+    <div class="kpi-sub">
+        {{ today_orders }} order{{ 's' if today_orders != 1 else '' }} today
+    </div>
+
+</div>
   <div class="kpi-card" style="--kpi-accent:#10b981;">
     <div class="kpi-label">Today's Profit</div>
-    <div class="kpi-value">₹{{ "%.0f"|format(today_profit) }}</div>
+    <div class="kpi-value">
+    ₹{{ "{:,.0f}".format(today_profit) }}
+</div>
     <div class="kpi-sub">Gross profit earned today</div>
 </div>
   <div class="kpi-card" style="--kpi-accent:#10b981;">
     <div class="kpi-label">Monthly Profit</div>
-    <div class="kpi-value">₹{{ "%.0f"|format(month_profit) }}</div>
+    <div class="kpi-value">
+    ₹{{ "{:,.0f}".format(month_profit) }}
+</div>
     <div class="kpi-sub">Gross profit earned this month</div>
 </div>
 <div class="kpi-card" style="--kpi-accent: #8b5cf6;">
@@ -51,7 +94,9 @@
 </div>
   <div class="kpi-card" style="--kpi-accent: #3b82f6;">
     <div class="kpi-label">Monthly Revenue</div>
-    <div class="kpi-value">₹{{ "%.0f"|format(month_rev) }}</div>
+    <div class="kpi-value">
+    ₹{{ "{:,.0f}".format(today_rev) }}
+</div>
     <div class="kpi-sub">
       {% if revenue_growth >= 0 %}
         <span class="kpi-badge up">▲ {{ revenue_growth }}% vs last month</span>
@@ -75,12 +120,16 @@
 
   <div class="kpi-card" style="--kpi-accent: #8b5cf6;">
     <div class="kpi-label">Inventory Value</div>
-    <div class="kpi-value">₹{{ "%.0f"|format(inv_value) }}</div>
+    <div class="kpi-value">
+    ₹{{ "{:,.0f}".format(month_rev) }}
+</div>
     <div class="kpi-sub">Current stock × price</div>
   </div>
 <div class="kpi-card" style="--kpi-accent:#f59e0b;">
     <div class="kpi-label">Purchase Value</div>
-    <div class="kpi-value">₹{{ "%.0f"|format(purchase_value) }}</div>
+    <div class="kpi-value">
+    ₹{{ "{:,.0f}".format(purchase_value) }}
+</div>
     <div class="kpi-sub">Total purchases</div>
   </div>
 </div>

@@ -18,52 +18,71 @@ def _get_kpis():
     last_month_s = (month_start - timedelta(days=1)).replace(day=1)
     last_month_e = month_start - timedelta(days=1)
 
-    # ── Today's Revenue ──────────────────────────────────────────────────────
-    today_rev = (db.session.query(func.coalesce(func.sum(Payment.amount), 0))
-                 .filter(Payment.payment_date == today)
-                 .scalar())
-    today_profit = (
-    db.session.query(
-        func.coalesce(
-            func.sum(
-                OrderItem.quantity *
-                (OrderItem.selling_price - OrderItem.cost_price)
-            ),
-            0
-        )
-    )
-    .join(Order, Order.order_id == OrderItem.order_id)
-    .filter(Order.order_date == today)
-    .scalar()
-)
-    # ── Today's Orders ───────────────────────────────────────────────────────
-    today_orders = (Order.query
-                    .filter(Order.order_date == today)
-                    .count())
+ # ── Today's Revenue ─────────────────────────────────────────────
 
-    # ── This Month Revenue ───────────────────────────────────────────────────
-    month_rev = (db.session.query(func.coalesce(func.sum(Payment.amount), 0))
-                 .filter(Payment.payment_date >= month_start)
-                 .scalar())
-    month_profit = (
-    db.session.query(
-        func.coalesce(
-            func.sum(
-                OrderItem.quantity *
-                (OrderItem.selling_price - OrderItem.cost_price)
-            ),
-            0
-        )
+    today_rev = (
+        db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
+        .filter(Order.order_date == today)
+        .scalar()
     )
-    .join(Order, Order.order_id == OrderItem.order_id)
-    .filter(Order.order_date >= month_start)
-    .scalar()
-)
-    # ── Last Month Revenue (for growth %) ────────────────────────────────────
-    last_rev = (db.session.query(func.coalesce(func.sum(Payment.amount), 0))
-                .filter(Payment.payment_date.between(last_month_s, last_month_e))
-                .scalar())
-    margin_percent = 0
+
+    # ── Today's Profit ──────────────────────────────────────────────
+
+    today_profit = (
+        db.session.query(
+            func.coalesce(
+                func.sum(
+                    OrderItem.quantity *
+                    (OrderItem.selling_price - OrderItem.cost_price)
+                ),
+                0
+            )
+        )
+        .join(Order, Order.order_id == OrderItem.order_id)
+        .filter(Order.order_date == today)
+        .scalar()
+    )
+
+    # ── Today's Orders ──────────────────────────────────────────────
+
+    today_orders = (
+        Order.query
+        .filter(Order.order_date == today)
+        .count()
+    )
+
+    # ── This Month Revenue ──────────────────────────────────────────
+
+    month_rev = (
+        db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
+        .filter(Order.order_date >= month_start)
+        .scalar()
+    )
+
+    # ── This Month Profit ───────────────────────────────────────────
+
+    month_profit = (
+        db.session.query(
+            func.coalesce(
+                func.sum(
+                    OrderItem.quantity *
+                    (OrderItem.selling_price - OrderItem.cost_price)
+                ),
+                0
+            )
+        )
+        .join(Order, Order.order_id == OrderItem.order_id)
+        .filter(Order.order_date >= month_start)
+        .scalar()
+    )
+
+    # ── Last Month Revenue ──────────────────────────────────────────
+
+    last_rev = (
+        db.session.query(func.coalesce(func.sum(Order.total_amount), 0))
+        .filter(Order.order_date.between(last_month_s, last_month_e))
+        .scalar()
+    )
     revenue_growth = 0
 
     if float(month_rev) > 0:
@@ -145,6 +164,10 @@ def _get_kpis():
         .limit(8)
         .all()
     )
+    print("Today:", today)
+    print("Month Start:", month_start)
+    print("Today's Revenue:", today_rev)
+    print("Monthly Revenue:", month_rev)
     return {
         'today_rev': float(today_rev),
         'today_profit': float(today_profit),

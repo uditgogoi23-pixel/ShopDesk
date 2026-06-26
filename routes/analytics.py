@@ -23,7 +23,7 @@ def _top_selling(limit=10, days=30):
             Product.price,
             Product.stock,
             func.sum(OrderItem.quantity).label('units_sold'),
-            func.sum(OrderItem.quantity * Product.price).label('revenue'),
+            func.sum(OrderItem.quantity * OrderItem.selling_price).label('revenue'),
         )
         .join(OrderItem, Product.product_id == OrderItem.product_id)
         .join(Order, OrderItem.order_id == Order.order_id)
@@ -59,7 +59,7 @@ def _revenue_by_category(days=30):
     return (
         db.session.query(
             Product.category,
-            func.sum(OrderItem.quantity * Product.price).label('revenue'),
+            func.sum(OrderItem.quantity * OrderItem.selling_price).label('revenue'),
             func.sum(OrderItem.quantity).label('units_sold'),
             func.count(func.distinct(Order.order_id)).label('orders'),
         )

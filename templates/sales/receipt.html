@@ -3,82 +3,441 @@
 {% block title %}Receipt{% endblock %}
 
 {% block content %}
+<style>
+.card{
+    max-width:800px;
+    margin:auto;
+    padding:20px;
+    box-shadow:none;
+    border:none;
+}
 
+body{
+    background:white !important;
+    margin:0;
+}
+
+table{
+    page-break-inside:auto;
+}
+
+tr{
+    page-break-inside:avoid;
+}
+
+img{
+    print-color-adjust:exact;
+    -webkit-print-color-adjust:exact;
+}
+</style>
 <div class="card">
 
-    <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:30px;">
+
+    <div style="display:flex;gap:20px;align-items:flex-start;">
+
+        {% if settings and settings.logo %}
+        <img
+            src="{{ url_for('static', filename=settings.logo) }}"
+            alt="Logo"
+            style="
+                width:90px;
+                height:90px;
+                object-fit:contain;
+                border-radius:8px;
+            "
+        >
+        {% endif %}
+
         <div>
-            <h2>🧾 ShopDesk Receipt</h2>
-            <p>Order #{{ order.order_id }}</p>
-            <div><strong>Invoice:</strong> {{ order.invoice_no }}</div>
-            <p>Date: {{ order.order_date }}</p>
+
+            <h1 style="margin:0;font-size:32px;">
+                {{ settings.shop_name if settings else "ShopDesk" }}
+            </h1>
+
+            {% if settings and settings.owner_name %}
+            <p style="margin:4px 0;">
+                <strong>Owner:</strong> {{ settings.owner_name }}
+            </p>
+            {% endif %}
+
+            {% if settings and settings.address %}
+            <p style="margin:4px 0;">
+                {{ settings.address }}
+            </p>
+            {% endif %}
+
+            <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:6px;">
+
+                {% if settings and settings.phone %}
+                <span>📞 {{ settings.phone }}</span>
+                {% endif %}
+
+                {% if settings and settings.email %}
+                <span>✉ {{ settings.email }}</span>
+                {% endif %}
+
+            </div>
+
+            {% if settings and settings.gst_enabled %}
+            <p style="margin-top:6px;">
+                <strong>GSTIN:</strong> {{ settings.gst_number }}
+            </p>
+            {% endif %}
+
         </div>
 
+    </div>
+
+    <div style="text-align:right;min-width:220px;">
+
         <button onclick="window.print()" class="btn btn-primary">
-            Print Receipt
+            🖨 Print Receipt
         </button>
+
+        <hr>
+
+        <h3 style="margin-bottom:10px;">
+            TAX INVOICE
+        </h3>
+
+        <p><strong>Invoice:</strong> {{ order.invoice_no }}</p>
+
+        <p><strong>Order ID:</strong> {{ order.order_id }}</p>
+
+        <p><strong>Date:</strong> {{ order.order_date.strftime('%d %b %Y') }}</p>
+
+        <p><strong>Time:</strong> {{ order.order_date.strftime('%I:%M %p') }}</p>
+
+    </div>
+
+</div>
     </div>
 
     <hr>
 
-    <h3>Customer Details</h3>
+    <div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:25px;
+margin:25px 0;
+">
 
-    {% if order.customer %}
-        <p><strong>Name:</strong> {{ order.customer.name if order.customer else 'Walk-in Customer' }}</p>
-        <p><strong>Phone:</strong> {{ order.customer.phone if order.customer else '-' }}</p>
-    {% else %}
-        <p>Walk-in Customer</p>
-    {% endif %}
+    <div style="
+    border:1px solid #e5e7eb;
+    border-radius:10px;
+    padding:18px;
+    ">
 
-    <hr>
+        <h3 style="margin-top:0;color:#2563eb;">
+            Customer Details
+        </h3>
 
-    <table class="table">
-        <thead>
+        {% if order.customer %}
+
+            <p><strong>Name:</strong><br>{{ order.customer.name }}</p>
+
+            <p><strong>Phone:</strong><br>{{ order.customer.phone or "-" }}</p>
+
+        {% else %}
+
+            <p><strong>Walk-in Customer</strong></p>
+
+        {% endif %}
+
+    </div>
+
+    <div style="
+    border:1px solid #e5e7eb;
+    border-radius:10px;
+    padding:18px;
+    ">
+
+        <h3 style="margin-top:0;color:#2563eb;">
+            Invoice Summary
+        </h3>
+
+        <table style="width:100%;border-collapse:collapse;">
+
             <tr>
-                <th>Product</th>
-                <th>Qty</th>
-                <th>Price</th>
-                <th>Total</th>
+                <td><strong>Invoice No.</strong></td>
+                <td style="text-align:right;">{{ order.invoice_no }}</td>
             </tr>
+
+            <tr>
+                <td><strong>Order ID</strong></td>
+                <td style="text-align:right;">{{ order.order_id }}</td>
+            </tr>
+
+            <tr>
+                <td><strong>Date</strong></td>
+                <td style="text-align:right;">
+                    {{ order.order_date.strftime('%d %b %Y') }}
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Time</strong></td>
+                <td style="text-align:right;">
+                    {{ order.order_date.strftime('%I:%M %p') }}
+                </td>
+            </tr>
+
+        </table>
+
+    </div>
+
+</div>
+
+<hr>
+
+    <div style="margin-top:30px;">
+
+    <h3 style="
+    margin-bottom:15px;
+    color:#2563eb;
+    ">
+        Purchased Items
+    </h3>
+
+    <table style="
+    width:100%;
+    border-collapse:collapse;
+    font-size:15px;
+    ">
+
+        <thead>
+
+            <tr style="
+            background:#2563eb;
+            color:white;
+            ">
+
+                <th style="padding:12px;text-align:left;">Product</th>
+
+                <th style="padding:12px;text-align:center;">Qty</th>
+
+                <th style="padding:12px;text-align:right;">Rate</th>
+
+                <th style="padding:12px;text-align:right;">Amount</th>
+
+            </tr>
+
         </thead>
 
         <tbody>
 
         {% for item in items %}
-        <tr>
-            <td>{{ item.product.product_name if item.product else 'Deleted Product' }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>₹{{ "%.2f"|format(item.selling_price) }}</td>
-            <td>₹{{ "%.2f"|format(item.quantity * item.selling_price) }}</td>
+
+        <tr style="border-bottom:1px solid #ececec;">
+
+            <td style="padding:14px;">
+
+                <strong>
+                    {{ item.product.product_name if item.product else "Deleted Product" }}
+                </strong>
+
+                {% if item.product %}
+                <br>
+                <small style="color:#666;">
+                    {{ item.product.category }}
+                </small>
+                {% endif %}
+
+            </td>
+
+            <td style="
+            text-align:center;
+            padding:14px;
+            ">
+                {{ item.quantity }} {{ item.unit_type }}
+            </td>
+
+            <td style="
+            text-align:right;
+            padding:14px;
+            ">
+                ₹{{ "%.2f"|format(item.selling_price) }}
+            </td>
+
+            <td style="
+            text-align:right;
+            padding:14px;
+            font-weight:600;
+            ">
+                ₹{{ "%.2f"|format(item.quantity * item.selling_price) }}
+            </td>
+
         </tr>
+
         {% endfor %}
 
         </tbody>
+
     </table>
-
-    <hr>
-
-    <div style="margin-top:20px; text-align:right;">
-
-        <p><strong>Subtotal:</strong> ₹{{ "%.2f"|format(order.total_amount) }}</p>
-
-        <p><strong>Discount:</strong> ₹{{ "%.2f"|format(order.discount) }}</p>
-
-        <p><strong>GST (18%):</strong> ₹{{ "%.2f"|format(order.gst_amount) }}</p>
-
-        <hr>
-
-        <h2><strong>Grand Total:</strong> ₹{{ "%.2f"|format(order.grand_total) }}</h2>
-
-    </div>
-
-    {% if payment %}
-    <p>
-        <strong>Payment Mode:</strong>
-        {{ payment.payment_mode }}
-    </p>
-    {% endif %}
 
 </div>
 
+    <hr>
+
+    <div style="
+display:flex;
+justify-content:flex-end;
+margin-top:35px;
+">
+
+    <div style="
+    width:360px;
+    border:1px solid #dbeafe;
+    border-radius:12px;
+    padding:20px;
+    background:#f8fbff;
+    ">
+
+        <h3 style="
+        margin-top:0;
+        margin-bottom:18px;
+        color:#2563eb;
+        ">
+            Payment Summary
+        </h3>
+
+        <table style="
+        width:100%;
+        border-collapse:collapse;
+        ">
+
+            <tr>
+                <td style="padding:8px 0;">Subtotal</td>
+                <td style="text-align:right;">
+                    ₹{{ "%.2f"|format(order.total_amount) }}
+                </td>
+            </tr>
+
+            <tr>
+                <td style="padding:8px 0;">Discount</td>
+                <td style="text-align:right;color:#16a34a;">
+                    - ₹{{ "%.2f"|format(order.discount) }}
+                </td>
+            </tr>
+
+            {% if settings and settings.gst_enabled %}
+            <tr>
+                <td style="padding:8px 0;">
+                    GST ({{ settings.default_gst_rate }}%)
+                </td>
+                <td style="text-align:right;">
+                    ₹{{ "%.2f"|format(order.gst_amount) }}
+                </td>
+            </tr>
+            {% endif %}
+
+        </table>
+
+        <hr style="margin:18px 0;">
+
+        <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        background:#2563eb;
+        color:white;
+        padding:14px 16px;
+        border-radius:10px;
+        ">
+
+            <strong style="font-size:18px;">
+                Grand Total
+            </strong>
+
+            <span style="
+            font-size:24px;
+            font-weight:700;
+            ">
+                ₹{{ "%.2f"|format(order.grand_total) }}
+            </span>
+
+        </div>
+
+        {% if payment %}
+        <div style="
+        margin-top:18px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        ">
+
+            <span><strong>Payment Mode</strong></span>
+
+            <span style="
+            background:#dcfce7;
+            color:#166534;
+            padding:6px 12px;
+            border-radius:999px;
+            font-size:14px;
+            font-weight:600;
+            ">
+                {{ payment.payment_mode }}
+            </span>
+
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>
+
+</div>
+
+<hr style="margin-top:40px;">
+
+<div style="
+text-align:center;
+color:#555;
+margin-top:25px;
+line-height:1.8;
+">
+
+    <h2 style="
+    margin-bottom:10px;
+    color:#2563eb;
+    ">
+        🎉 Thank You!
+    </h2>
+
+    <p style="font-size:16px;">
+        Thank you for shopping with
+        <strong>{{ settings.shop_name if settings else "ShopDesk" }}</strong>.
+    </p>
+
+    <p>
+        We truly appreciate your business and look forward to serving you again.
+    </p>
+
+    {% if settings and settings.phone %}
+    <p>
+        📞 Need help? Contact us at
+        <strong>{{ settings.phone }}</strong>
+    </p>
+    {% endif %}
+
+    {% if settings and settings.email %}
+    <p>
+        ✉ {{ settings.email }}
+    </p>
+    {% endif %}
+
+    <hr style="margin:25px 0;">
+
+    <small style="color:#777;">
+        This is a computer-generated tax invoice and does not require a signature.
+    </small>
+
+    <br>
+
+    <small style="color:#999;">
+        Powered by <strong>ShopDesk</strong>
+    </small>
+
+</div>
 {% endblock %}

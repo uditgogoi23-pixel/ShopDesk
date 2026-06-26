@@ -39,10 +39,13 @@ def create_app():
     from routes.orders import orders_bp
     from routes.dashboard import dashboard_bp
     from routes.analytics import analytics_bp
+    from routes.settings import settings_bp
+
     app.register_blueprint(customers_bp, url_prefix='/customers')
     app.register_blueprint(suppliers_bp, url_prefix='/suppliers')
     app.register_blueprint(imports_bp, url_prefix="/imports")
     app.register_blueprint(export_bp, url_prefix="/export")
+    app.register_blueprint(settings_bp, url_prefix='/settings')
 
     app.register_blueprint(main_bp)
     app.register_blueprint(products_bp, url_prefix='/products')

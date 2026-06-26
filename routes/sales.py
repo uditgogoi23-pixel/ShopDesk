@@ -14,6 +14,7 @@ from extensions import db
 from models import Product, Order, OrderItem, Payment, Customer, BusinessSettings
 from datetime import date
 
+
 sales_bp = Blueprint('sales', __name__)
 
 PAYMENT_MODES = ['Cash', 'UPI', 'Card', 'Net Banking', 'Cheque']
@@ -174,10 +175,20 @@ def complete_sale():
 
 
 # ─── ORDER RECEIPT ────────────────────────────────────────────────────────────
+# ─── ORDER RECEIPT ────────────────────────────────────────────────────────────
 @sales_bp.route('/receipt/<int:order_id>')
 def receipt(order_id):
-    order   = Order.query.get_or_404(order_id)
+    order = Order.query.get_or_404(order_id)
     payment = Payment.query.filter_by(order_id=order_id).first()
-    items   = OrderItem.query.filter_by(order_id=order_id).all()
-    return render_template('sales/receipt.html',
-                           order=order, payment=payment, items=items)
+    items = OrderItem.query.filter_by(order_id=order_id).all()
+
+    # Get business settings
+    settings = BusinessSettings.query.first()
+
+    return render_template(
+        'sales/receipt.html',
+        order=order,
+        payment=payment,
+        items=items,
+        settings=settings
+    )
