@@ -6,19 +6,25 @@ MySQL database connection and Flask settings
 import os
 from datetime import timedelta
 
+
 class Config:
     # ─────────────────────────────────────────────
     # SECURITY
     # ─────────────────────────────────────────────
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'harry-retail-secret-key-2024')
+    # Set SECRET_KEY in your .env file — never leave this as a default in production
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        import secrets
+        SECRET_KEY = secrets.token_hex(32)   # Random key each restart (dev only)
 
     # ─────────────────────────────────────────────
-    # DATABASE — edit these to match your MySQL setup
+    # DATABASE — set these in your .env file
     # ─────────────────────────────────────────────
-    MYSQL_HOST     = os.environ.get('MYSQL_HOST',     'localhost')
-    MYSQL_USER     = os.environ.get('MYSQL_USER',     'root')
-    MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', '785663')
-    MYSQL_DB = os.environ.get('MYSQL_DB', 'harry_retail_test')
+    MYSQL_HOST     = os.environ.get('MYSQL_HOST', 'localhost')
+    MYSQL_USER     = os.environ.get('MYSQL_USER', 'root')
+    MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', '')
+  
+    MYSQL_DB = os.environ.get('MYSQL_DB', 'ShopDesk')   # Fixed: matches setup_database.sql
     MYSQL_PORT     = int(os.environ.get('MYSQL_PORT', 3306))
 
     SQLALCHEMY_DATABASE_URI = (
@@ -32,15 +38,16 @@ class Config:
     }
 
     # ─────────────────────────────────────────────
-    # APP SETTINGS
+    # SESSION / COOKIE
     # ─────────────────────────────────────────────
-    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_HTTPONLY  = True
+    SESSION_COOKIE_SAMESITE  = 'Lax'
     PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
 
     # ─────────────────────────────────────────────
     # BUSINESS SETTINGS
     # ─────────────────────────────────────────────
-    CURRENCY_SYMBOL   = '₹'    # Change to $ or £ as needed
-    LOW_STOCK_THRESHOLD = 10   # Alert when stock falls below this
-    BUSINESS_NAME     = 'Harry Retail'
-    TAX_RATE          = 0.0    # Set GST / VAT rate e.g. 0.18 for 18%
+    CURRENCY_SYMBOL    = '₹'     # Change to $ or £ as needed
+    LOW_STOCK_THRESHOLD = 10     # Global fallback alert threshold
+    BUSINESS_NAME      = 'Harry Retail'
+    TAX_RATE           = 0.0    # Set GST/VAT rate e.g. 0.18 for 18%

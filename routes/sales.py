@@ -13,7 +13,7 @@ from flask import (Blueprint, render_template, request,
 from extensions import db
 from models import Product, Order, OrderItem, Payment, Customer, BusinessSettings
 from datetime import date
-
+from utils.unit_converter import convert_to_base
 
 sales_bp = Blueprint('sales', __name__)
 
@@ -89,18 +89,30 @@ def complete_sale():
             }), 404
 
         # Accept decimal quantity from the modal (e.g. 0.250 kg)
-        qty       = float(item['quantity'])
+        qty = float(item['quantity'])
         unit_type = item.get('unit_type', product.unit_type)
 
-        if float(product.stock) < qty:
+        base_qty = convert_to_base(
+            qty,
+            unit_type,
+            product.unit_type
+        )
+
+        if float(product.stock) < base_qty:
             return jsonify({
                 'success': False,
                 'message': (f"Insufficient stock for {product.product_name}. "
                             f"Available: {float(product.stock)} {product.unit_type}"),
             }), 400
 
-        total += float(product.price) * qty
-        cart_items.append({'product': product, 'quantity': qty, 'unit_type': unit_type})
+        total += float(product.price) * base_qty
+
+        cart_items.append({
+            'product': product,
+            'quantity': base_qty,
+            'display_quantity': qty,
+            'unit_type': unit_type
+        })
 
     discount       = round(total * (discount_percent / 100), 2)
     taxable_amount = total - discount
@@ -143,14 +155,14 @@ def complete_sale():
             unit_type=unit_type,
 
             unit_price=prod.price,
-            subtotal=float(qty) * float(prod.price),
+            subtotal=qty * float(prod.price),
 
             selling_price=prod.price,
             cost_price=prod.cost_price
         )
             
             db.session.add(order_item)
-            prod.stock = float(prod.stock) - qty   # float arithmetic for decimals
+            prod.stock -= qty # float arithmetic for decimals
 
         # ── 3. Record Payment ─────────────────────────────────────────────────
         payment = Payment(

@@ -4,7 +4,6 @@ from models import (
     Product,
     StockEntry,
     Supplier,
-    PurchaseHistory
 )
 from datetime import datetime
 
@@ -63,8 +62,6 @@ def add():
         product.cost_price = purchase_price   # update latest cost price
 
         db.session.add(entry)
-        db.session.add(purchase)
-
         db.session.commit()
 
         flash(f'Stock added! {product.product_name} → {new_stock} {product.unit_type}', 'success')

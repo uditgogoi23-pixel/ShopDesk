@@ -6,7 +6,7 @@ KPI cards: today's revenue, orders, stock alerts, top sellers, monthly trend
 from flask import Blueprint, render_template, jsonify
 from extensions import db
 from models import Order, OrderItem, Payment, Product, StockEntry
-from sqlalchemy import func, desc, text
+from sqlalchemy import func, desc
 from datetime import date, timedelta
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -18,22 +18,20 @@ def _get_kpis():
     last_month_s = (month_start - timedelta(days=1)).replace(day=1)
     last_month_e = month_start - timedelta(days=1)
 
- # ── Today's Revenue ─────────────────────────────────────────────
-
+    # ── Today's Revenue ─────────────────────────────────────────────
     today_rev = (
-    db.session.query(
-        func.coalesce(
-            func.sum(OrderItem.selling_price * OrderItem.quantity),
-            0
+        db.session.query(
+            func.coalesce(
+                func.sum(OrderItem.selling_price * OrderItem.quantity),
+                0
+            )
         )
+        .join(Order, Order.order_id == OrderItem.order_id)
+        .filter(Order.order_date == today)
+        .scalar()
     )
-    .join(Order, Order.order_id == OrderItem.order_id)
-    .filter(Order.order_date == today)
-    .scalar()
-)
 
     # ── Today's Profit ──────────────────────────────────────────────
-
     today_profit = (
         db.session.query(
             func.coalesce(
@@ -50,7 +48,6 @@ def _get_kpis():
     )
 
     # ── Today's Orders ──────────────────────────────────────────────
-
     today_orders = (
         Order.query
         .filter(Order.order_date == today)
@@ -58,21 +55,19 @@ def _get_kpis():
     )
 
     # ── This Month Revenue ──────────────────────────────────────────
-
     month_rev = (
-    db.session.query(
-        func.coalesce(
-            func.sum(OrderItem.selling_price * OrderItem.quantity),
-            0
+        db.session.query(
+            func.coalesce(
+                func.sum(OrderItem.selling_price * OrderItem.quantity),
+                0
+            )
         )
+        .join(Order, Order.order_id == OrderItem.order_id)
+        .filter(Order.order_date >= month_start)
+        .scalar()
     )
-    .join(Order, Order.order_id == OrderItem.order_id)
-    .filter(Order.order_date >= month_start)
-    .scalar()
-)
 
     # ── This Month Profit ───────────────────────────────────────────
-
     month_profit = (
         db.session.query(
             func.coalesce(
@@ -89,19 +84,19 @@ def _get_kpis():
     )
 
     # ── Last Month Revenue ──────────────────────────────────────────
-
     last_rev = (
-    db.session.query(
-        func.coalesce(
-            func.sum(OrderItem.selling_price * OrderItem.quantity),
-            0
+        db.session.query(
+            func.coalesce(
+                func.sum(OrderItem.selling_price * OrderItem.quantity),
+                0
+            )
         )
+        .join(Order, Order.order_id == OrderItem.order_id)
+        .filter(Order.order_date.between(last_month_s, last_month_e))
+        .scalar()
     )
-    .join(Order, Order.order_id == OrderItem.order_id)
-    .filter(Order.order_date.between(last_month_s, last_month_e))
-    .scalar()
-)
-    margin_percent = 0 
+
+    margin_percent = 0
     revenue_growth = 0
 
     if float(month_rev) > 0:
@@ -118,24 +113,29 @@ def _get_kpis():
 
     # ── Low Stock Products ────────────────────────────────────────────────────
     low_stock = sorted(
-                [p for p in Product.query.all() if p.is_low_stock],
-                key=lambda p: float(p.stock)
-            )
+        [p for p in Product.query.all() if p.is_low_stock],
+        key=lambda p: float(p.stock)
+    )
 
     # ── Inventory Value ───────────────────────────────────────────────────────
-    inv_value = (db.session.query(
-                     func.coalesce(func.sum(Product.price * Product.stock), 0))
-                 .scalar())
-    purchase_value = (
-    db.session.query(
-        func.coalesce(
-            func.sum(
-                StockEntry.quantity_added * StockEntry.purchase_price
-            ),
-            0
+    inv_value = (
+        db.session.query(
+            func.coalesce(func.sum(Product.price * Product.stock), 0)
         )
-    ).scalar()
-)
+        .scalar()
+    )
+    purchase_value = (
+        db.session.query(
+            func.coalesce(
+                func.sum(
+                    StockEntry.quantity_added * StockEntry.purchase_price
+                ),
+                0
+            )
+        )
+        .scalar()
+    )
+
     # ── Top Selling Products (last 30 days) ───────────────────────────────────
     thirty_ago = today - timedelta(days=30)
     top_products = (
@@ -155,7 +155,6 @@ def _get_kpis():
     )
 
     # ── Monthly Revenue Trend (last 6 months) ─────────────────────────────────
-    # REPLACE the monthly_trend query with this:
     monthly_trend = [
         {
             'month': r.month,
@@ -172,37 +171,30 @@ def _get_kpis():
             .all()
         )
     ]
-    # ── Recent Orders ─────────────────────────────────────────────────────────
-    recent_orders = (Order.query
-                     .order_by(desc(Order.order_id))
-                     .limit(8)
-                     .all())
 
+    # ── Recent Orders ─────────────────────────────────────────────────────────
     recent_orders = (
         Order.query
         .order_by(desc(Order.order_id))
         .limit(8)
         .all()
     )
-    print("Today:", today)
-    print("Month Start:", month_start)
-    print("Today's Revenue:", today_rev)
-    print("Monthly Revenue:", month_rev)
+
     return {
-        'today_rev': float(today_rev),
-        'today_profit': float(today_profit),
-        'today_orders': today_orders,
-        'month_rev': float(month_rev),
-        'month_profit': float(month_profit),
+        'today_rev':      float(today_rev),
+        'today_profit':   float(today_profit),
+        'today_orders':   today_orders,
+        'month_rev':      float(month_rev),
+        'month_profit':   float(month_profit),
         'margin_percent': margin_percent,
         'revenue_growth': revenue_growth,
         'total_products': total_products,
-        'low_stock': low_stock,
-        'inv_value': float(inv_value),
+        'low_stock':      low_stock,
+        'inv_value':      float(inv_value),
         'purchase_value': float(purchase_value),
-        'top_products': top_products,
-        'monthly_trend': monthly_trend,
-        'recent_orders': recent_orders,
+        'top_products':   top_products,
+        'monthly_trend':  monthly_trend,
+        'recent_orders':  recent_orders,
     }
 
 

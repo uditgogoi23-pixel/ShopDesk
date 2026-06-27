@@ -6,8 +6,8 @@ order value trends, inventory turnover, low stock alerts
 
 from flask import Blueprint, render_template, request, jsonify
 from extensions import db
-from models import Order, OrderItem, Payment, Product
-from sqlalchemy import func, desc, asc, text, not_, exists
+from models import Order, OrderItem, Payment, Product, StockEntry
+from sqlalchemy import func, desc, asc
 from datetime import date, timedelta
 
 analytics_bp = Blueprint('analytics', __name__)
@@ -37,8 +37,6 @@ def _top_selling(limit=10, days=30):
 
 def _dead_stock(days=30):
     since = date.today() - timedelta(days=days)
-
-    # Products with NO order items in the period
     sold_ids = (
         db.session.query(OrderItem.product_id)
         .join(Order, OrderItem.order_id == Order.order_id)
@@ -99,7 +97,6 @@ def _monthly_growth():
         .order_by('month')
         .all()
     )
-    # Compute month-on-month growth %
     result = []
     for i, row in enumerate(rows):
         growth = 0
@@ -117,10 +114,12 @@ def _monthly_growth():
 
 
 def _low_stock_alerts():
-    return (Product.query
-            .filter(Product.stock <= Product.reorder_level)
-            .order_by(asc(Product.stock))
-            .all())
+    return (
+        Product.query
+        .filter(Product.stock <= Product.reorder_level)
+        .order_by(asc(Product.stock))
+        .all()
+    )
 
 
 def _inventory_turnover(days=30):
@@ -157,146 +156,6 @@ def _inventory_turnover(days=30):
     result.sort(key=lambda x: x['turnover'], reverse=True)
     return result[:20]
 
-
-# ─── MAIN ANALYTICS PAGE ─────────────────────────────────────────────────────
-@analytics_bp.route('/')
-def index():
-    days = int(request.args.get('days', 30))
-
-    top_selling     = _top_selling(limit=10, days=days)
-    dead_stock      = _dead_stock(days=days)
-    rev_by_cat = [
-        {
-            'category': r.category or 'Other',
-            'revenue': float(r.revenue),
-            'orders': r.orders
-        }
-        for r in _revenue_by_category(days=days)
-    ]
-    avg_ov          = _avg_order_value(days=days)
-    monthly_growth  = _monthly_growth()
-    low_stock       = _low_stock_alerts()
-    inventory_tv    = _inventory_turnover(days=days)
-    
-    total_revenue = (
-        db.session.query(
-            func.coalesce(
-                func.sum(OrderItem.quantity * OrderItem.selling_price),
-                0
-            )
-        ).scalar()
-    )
-
-    total_profit = (
-        db.session.query(
-            func.coalesce(
-                func.sum(
-                    OrderItem.quantity *
-                    (OrderItem.selling_price - OrderItem.cost_price)
-                ),
-                0
-            )
-        ).scalar()
-    )
-
-    margin_percent = 0
-
-    if float(total_revenue) > 0:
-        margin_percent = round(
-            (float(total_profit) / float(total_revenue)) * 100,
-            1
-        )
-
-    most_profitable = (
-        db.session.query(
-            Product.product_name,
-            func.sum(
-                OrderItem.quantity *
-                (OrderItem.selling_price - OrderItem.cost_price)
-            ).label('profit')
-        )
-        .join(Product, Product.product_id == OrderItem.product_id)
-        .group_by(Product.product_id)
-        .order_by(desc('profit'))
-        .limit(10)
-        .all()
-    )
-
-    least_profitable = (
-        db.session.query(
-            Product.product_name,
-            func.sum(
-                OrderItem.quantity *
-                (OrderItem.selling_price - OrderItem.cost_price)
-            ).label('profit')
-        )
-        .join(Product, Product.product_id == OrderItem.product_id)
-        .group_by(Product.product_id)
-        .order_by(asc('profit'))
-        .limit(10)
-        .all()
-    )
-    daily_data = _daily_revenue(days)
-
-    forecast = _forecast_revenue(daily_data)
-
-    depletion = _stock_depletion()
-
-
-
-    insights = _business_insights(
-
-        daily_data,
-
-        top_selling,
-
-        dead_stock,
-
-        low_stock,
-
-        total_revenue,
-
-        total_profit,
-
-        margin_percent,
-
-        monthly_growth
-
-    )
-    return render_template(
-    'analytics/index.html',
-    days=days,
-    top_selling=top_selling,
-    dead_stock=dead_stock,
-    rev_by_cat=rev_by_cat,
-    avg_ov=avg_ov,
-    monthly_growth=monthly_growth,
-    low_stock=low_stock,
-    inventory_tv=inventory_tv,
-    total_revenue=total_revenue,
-    total_profit=total_profit,
-    margin_percent=margin_percent,
-    most_profitable=most_profitable,
-    least_profitable=least_profitable,
-    daily_data=daily_data,
-    forecast=forecast,
-    depletion=depletion,
-    insights=insights
-)
-    
-# ─── API endpoints for charts ─────────────────────────────────────────────────
-@analytics_bp.route('/api/category-revenue')
-def api_cat_rev():
-    days = int(request.args.get('days', 30))
-    data = _revenue_by_category(days=days)
-    return jsonify([
-        {'category': r.category or 'Uncategorised',
-         'revenue': float(r.revenue),
-         'units': r.units_sold}
-        for r in data
-    ])
-
-from models import StockEntry
 
 def _daily_revenue(days=30):
     """Daily revenue for trend chart."""
@@ -340,8 +199,8 @@ def _forecast_revenue(daily_data, days_ahead=7):
     today = date.today()
     return [
         {
-            'day':     str(today + timedelta(days=i+1)),
-            'revenue': round(avg, 2),
+            'day':      str(today + timedelta(days=i + 1)),
+            'revenue':  round(avg, 2),
             'forecast': True,
         }
         for i in range(days_ahead)
@@ -397,81 +256,195 @@ def _business_insights(daily_data, top_selling, dead_stock,
     """Auto-generate human-readable business insights."""
     insights = []
 
-    # Revenue trend
     if len(daily_data) >= 14:
-        first_half  = sum(d['revenue'] for d in daily_data[:len(daily_data)//2])
-        second_half = sum(d['revenue'] for d in daily_data[len(daily_data)//2:])
+        first_half  = sum(d['revenue'] for d in daily_data[:len(daily_data) // 2])
+        second_half = sum(d['revenue'] for d in daily_data[len(daily_data) // 2:])
         if first_half > 0:
             trend = round(((second_half - first_half) / first_half) * 100, 1)
             if trend > 0:
                 insights.append({
-                    'type': 'success',
-                    'icon': '📈',
+                    'type':  'success',
+                    'icon':  '📈',
                     'title': 'Revenue Growing',
-                    'text': f'Revenue up {trend}% in the second half of this period vs first half. Keep it up!'
+                    'text':  f'Revenue up {trend}% in the second half of this period vs first half. Keep it up!'
                 })
             elif trend < -10:
                 insights.append({
-                    'type': 'danger',
-                    'icon': '📉',
+                    'type':  'danger',
+                    'icon':  '📉',
                     'title': 'Revenue Declining',
-                    'text': f'Revenue down {abs(trend)}% recently. Consider promotions or checking inventory.'
+                    'text':  f'Revenue down {abs(trend)}% recently. Consider promotions or checking inventory.'
                 })
 
-    # Margin health
     if margin_percent > 30:
         insights.append({
-            'type': 'success',
-            'icon': '💰',
+            'type':  'success',
+            'icon':  '💰',
             'title': 'Healthy Margin',
-            'text': f'Gross margin is {margin_percent}% — good profitability. Industry average for retail is 20-30%.'
+            'text':  f'Gross margin is {margin_percent}% — good profitability. Industry average for retail is 20-30%.'
         })
-    elif margin_percent < 15 and margin_percent > 0:
+    elif 0 < margin_percent < 15:
         insights.append({
-            'type': 'warning',
-            'icon': '⚠️',
+            'type':  'warning',
+            'icon':  '⚠️',
             'title': 'Low Margin Warning',
-            'text': f'Gross margin is only {margin_percent}%. Review your purchase prices or selling prices.'
+            'text':  f'Gross margin is only {margin_percent}%. Review your purchase prices or selling prices.'
         })
 
-    # Top product insight
     if top_selling:
         best = top_selling[0]
         insights.append({
-            'type': 'info',
-            'icon': '🏆',
+            'type':  'info',
+            'icon':  '🏆',
             'title': 'Best Seller',
-            'text': f'{best.product_name} is your top product with {int(best.units_sold)} units sold and ₹{int(best.revenue)} revenue.'
+            'text':  f'{best.product_name} is your top product with {int(best.units_sold)} units sold and ₹{int(best.revenue)} revenue.'
         })
 
-    # Dead stock warning
     if len(dead_stock) > 0:
         insights.append({
-            'type': 'warning',
-            'icon': '💀',
+            'type':  'warning',
+            'icon':  '💀',
             'title': 'Dead Stock Alert',
-            'text': f'{len(dead_stock)} products have zero sales this period. Consider discounting: {", ".join([p.product_name for p in dead_stock[:3]])}.'
+            'text':  f'{len(dead_stock)} products have zero sales this period. Consider discounting: {", ".join([p.product_name for p in dead_stock[:3]])}.'
         })
 
-    # Low stock urgent
     critical = [p for p in low_stock if float(p.stock) == 0]
     if critical:
         insights.append({
-            'type': 'danger',
-            'icon': '🚨',
+            'type':  'danger',
+            'icon':  '🚨',
             'title': 'Out of Stock!',
-            'text': f'{len(critical)} products are completely out of stock: {", ".join([p.product_name for p in critical[:3]])}. Reorder immediately!'
+            'text':  f'{len(critical)} products are completely out of stock: {", ".join([p.product_name for p in critical[:3]])}. Reorder immediately!'
         })
 
-    # Monthly growth
     if len(monthly_growth) >= 2:
         last = monthly_growth[-1]
-
         if last['growth'] > 10:
             insights.append({
-                'type': 'success',
-                'icon': '🚀',
+                'type':  'success',
+                'icon':  '🚀',
                 'title': 'Strong Monthly Growth',
-                'text': f"Revenue increased by {last['growth']}% compared to last month."
+                'text':  f"Revenue increased by {last['growth']}% compared to last month."
             })
     return insights
+
+
+# ─── MAIN ANALYTICS PAGE ─────────────────────────────────────────────────────
+@analytics_bp.route('/')
+def index():
+    days = int(request.args.get('days', 30))
+
+    top_selling    = _top_selling(limit=10, days=days)
+    dead_stock     = _dead_stock(days=days)
+    rev_by_cat     = [
+        {
+            'category': r.category or 'Other',
+            'revenue':  float(r.revenue),
+            'orders':   r.orders
+        }
+        for r in _revenue_by_category(days=days)
+    ]
+    avg_ov         = _avg_order_value(days=days)
+    monthly_growth = _monthly_growth()
+    low_stock      = _low_stock_alerts()
+    inventory_tv   = _inventory_turnover(days=days)
+
+    total_revenue = (
+        db.session.query(
+            func.coalesce(
+                func.sum(OrderItem.quantity * OrderItem.selling_price),
+                0
+            )
+        ).scalar()
+    )
+
+    total_profit = (
+        db.session.query(
+            func.coalesce(
+                func.sum(
+                    OrderItem.quantity *
+                    (OrderItem.selling_price - OrderItem.cost_price)
+                ),
+                0
+            )
+        ).scalar()
+    )
+
+    margin_percent = 0
+    if float(total_revenue) > 0:
+        margin_percent = round(
+            (float(total_profit) / float(total_revenue)) * 100,
+            1
+        )
+
+    most_profitable = (
+        db.session.query(
+            Product.product_name,
+            func.sum(
+                OrderItem.quantity *
+                (OrderItem.selling_price - OrderItem.cost_price)
+            ).label('profit')
+        )
+        .join(Product, Product.product_id == OrderItem.product_id)
+        .group_by(Product.product_id)
+        .order_by(desc('profit'))
+        .limit(10)
+        .all()
+    )
+
+    least_profitable = (
+        db.session.query(
+            Product.product_name,
+            func.sum(
+                OrderItem.quantity *
+                (OrderItem.selling_price - OrderItem.cost_price)
+            ).label('profit')
+        )
+        .join(Product, Product.product_id == OrderItem.product_id)
+        .group_by(Product.product_id)
+        .order_by(asc('profit'))
+        .limit(10)
+        .all()
+    )
+
+    daily_data = _daily_revenue(days)
+    forecast   = _forecast_revenue(daily_data)
+    depletion  = _stock_depletion()
+    insights   = _business_insights(
+        daily_data, top_selling, dead_stock, low_stock,
+        total_revenue, total_profit, margin_percent, monthly_growth
+    )
+
+    return render_template(
+        'analytics/index.html',
+        days=days,
+        top_selling=top_selling,
+        dead_stock=dead_stock,
+        rev_by_cat=rev_by_cat,
+        avg_ov=avg_ov,
+        monthly_growth=monthly_growth,
+        low_stock=low_stock,
+        inventory_tv=inventory_tv,
+        total_revenue=total_revenue,
+        total_profit=total_profit,
+        margin_percent=margin_percent,
+        most_profitable=most_profitable,
+        least_profitable=least_profitable,
+        daily_data=daily_data,
+        forecast=forecast,
+        depletion=depletion,
+        insights=insights
+    )
+
+
+# ─── API endpoints for charts ─────────────────────────────────────────────────
+@analytics_bp.route('/api/category-revenue')
+def api_cat_rev():
+    days = int(request.args.get('days', 30))
+    data = _revenue_by_category(days=days)
+    return jsonify([
+        {'category': r.category or 'Uncategorised',
+         'revenue':  float(r.revenue),
+         'units':    r.units_sold}
+        for r in data
+    ])

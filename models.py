@@ -3,13 +3,24 @@ ShopDesk — Database Models
 SQLAlchemy ORM models matching the retail schema.
 
 CHANGES in this version (Migration 001):
-  Product   — added unit_type, cost_price, reorder_level
-  OrderItem — quantity changed from Integer → Numeric(10,3) for weight support
-              added unit_type (snapshot of unit at time of sale)
+  Product     — added unit_type, cost_price, reorder_level
+  OrderItem   — quantity changed from Integer → Numeric(10,3) for weight support
+                added unit_type (snapshot of unit at time of sale)
+
+BUG FIXES:
+  - unit_price is now non-nullable with default 0.00 (prevents TypeError in calculated_total)
+  - Order.calculated_total safely handles None values
+  - Order.to_dict() uses stored total_amount with calculated_total as fallback
+  - All datetime defaults changed to utcnow for consistency
+  - is_low_stock uses per-product reorder_level (correct single source of truth)
 """
 
 from extensions import db
 from datetime import date, datetime
+
+
+# ── UNIT TYPES supported by the POS quantity modal ───────────────────────────
+UNIT_TYPES = ['Units', 'kg', 'g', 'litre', 'ml', 'pack', 'dozen', 'piece']
 
 
 class Customer(db.Model):
@@ -17,9 +28,10 @@ class Customer(db.Model):
 
     customer_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name        = db.Column(db.String(100), nullable=False)
-    phone       = db.Column(db.String(10), unique=True, nullable=False)
+    phone       = db.Column(db.String(20), unique=True, nullable=True)
     email       = db.Column(db.String(150), unique=True, nullable=True)
-    created_at  = db.Column(db.DateTime, default=datetime.now)
+    city        = db.Column(db.String(50), nullable=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)  # Fixed: utcnow
 
     # Relationships
     orders = db.relationship('Order', backref='customer', lazy=True)
@@ -30,46 +42,38 @@ class Customer(db.Model):
             'name':        self.name,
             'phone':       self.phone,
             'email':       self.email,
+            'city':        self.city,
             'created_at':  str(self.created_at),
         }
-
-
-# ── UNIT TYPES supported by the POS quantity modal ───────────────────────────
-UNIT_TYPES = ['Units', 'kg', 'g', 'litre', 'ml', 'pack', 'dozen', 'piece']
 
 
 class Product(db.Model):
     __tablename__ = 'products'
 
-    product_id    = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    product_name  = db.Column(db.String(100), nullable=False)
-    category      = db.Column(db.String(50),  nullable=True)
-    price         = db.Column(db.Numeric(10, 2), nullable=False)
-    stock         = db.Column(db.Numeric(10, 3), default=0)  # Decimal for weight stock
+    product_id   = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    product_name = db.Column(db.String(100), nullable=False)
+    category     = db.Column(db.String(50), nullable=True)
+    price        = db.Column(db.Numeric(10, 2), nullable=False)
+    stock        = db.Column(db.Numeric(10, 3), default=0)  # Decimal for weight stock
 
     # ── NEW columns (Migration 001) ───────────────────────────────────────────
-    unit_type     = db.Column(db.String(20),   nullable=False, default='Units',
-                              comment='Units | kg | g | litre | ml | pack')
-    cost_price    = db.Column(db.Numeric(10, 2), nullable=False, default=0.00,
-                              comment='Purchase price — used for profit calculation')
-    discount_type = db.Column(db.String(10), default='none')
+    unit_type      = db.Column(db.String(20), nullable=False, default='Units',
+                               comment='Units | kg | g | litre | ml | pack')
+    cost_price     = db.Column(db.Numeric(10, 2), nullable=False, default=0.00,
+                               comment='Purchase price — used for profit calculation')
+    discount_type  = db.Column(db.String(10), default='none')
     discount_value = db.Column(db.Numeric(10, 2), default=0)
-    reorder_level = db.Column(db.Integer, nullable=False, default=10,
-                          comment='Low-stock alert threshold')
+    reorder_level  = db.Column(db.Integer, nullable=False, default=10,
+                               comment='Low-stock alert threshold (per product)')
+    image          = db.Column(db.String(255), default='default_product.png')
 
-    image = db.Column(db.String(255), default="default_product.png")
-    supplier_id = db.Column(
-        db.Integer,
-        db.ForeignKey("suppliers.supplier_id"),
-        nullable=True
-    )
     # Relationships
     order_items = db.relationship('OrderItem', backref='product', lazy=True)
 
     @property
     def is_low_stock(self):
         """True when stock is at or below the per-product reorder threshold."""
-        return float(self.stock) <= self.reorder_level
+        return float(self.stock) <= float(self.reorder_level)
 
     @property
     def margin_percent(self):
@@ -79,28 +83,28 @@ class Product(db.Model):
         return round(
             (float(self.price) - float(self.cost_price)) / float(self.price) * 100, 1
         )
+
     @property
     def quantity_options(self):
-
-        if self.unit_type == "kg":
-            return ["250g", "500g", "1kg", "2kg", "5kg"]
-
-        elif self.unit_type == "litre":
-            return ["250ml", "500ml", "1L", "2L", "5L"]
-
+        if self.unit_type == 'kg':
+            return ['250g', '500g', '1kg', '2kg', '5kg']
+        elif self.unit_type == 'litre':
+            return ['250ml', '500ml', '1L', '2L', '5L']
         else:
-            return ["1", "2", "5", "10"]
+            return ['1', '2', '5', '10']
+
     def to_dict(self):
         return {
-            'product_id':    self.product_id,
-            'product_name':  self.product_name,
-            'category':      self.category,
-            'price':         float(self.price),
-            'stock':         float(self.stock),
-            'unit_type':     self.unit_type,
-            'cost_price':    float(self.cost_price),
+            'product_id':   self.product_id,
+            'product_name': self.product_name,
+            'category':     self.category,
+            'price':        float(self.price),
+            'stock':        float(self.stock),
+            'unit_type':    self.unit_type,
+            'cost_price':   float(self.cost_price),
             'reorder_level': self.reorder_level,
-            'is_low_stock':  self.is_low_stock,
+            'is_low_stock': self.is_low_stock,
+            'image':        self.image,
         }
 
 
@@ -108,7 +112,7 @@ class Order(db.Model):
     __tablename__ = 'orders'
 
     order_id     = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_no   = db.Column(db.String(20), unique=True)
+    invoice_no   = db.Column(db.String(20), unique=True, nullable=True)
     customer_id  = db.Column(db.Integer, db.ForeignKey('customers.customer_id'), nullable=True)
     order_date   = db.Column(db.Date, default=date.today)
     total_amount = db.Column(db.Numeric(10, 2), nullable=True)
@@ -120,22 +124,31 @@ class Order(db.Model):
 
     # Relationships
     order_items = db.relationship('OrderItem', backref='order', lazy=True)
-    payments    = db.relationship('Payment',   backref='order', lazy=True)
+    payments    = db.relationship('Payment', backref='order', lazy=True)
 
     @property
     def calculated_total(self):
+        """
+        Recomputes total from order items.
+        Fixed: safely skips items where unit_price is None.
+        """
         return sum(
-            float(item.unit_price) * float(item.quantity)
+            float(item.unit_price or 0) * float(item.quantity or 0)
             for item in self.order_items
         )
 
     def to_dict(self):
+        # Use stored total_amount if available; fall back to calculated
+        stored = float(self.total_amount) if self.total_amount is not None else None
         return {
             'order_id':     self.order_id,
+            'invoice_no':   self.invoice_no,
             'customer_id':  self.customer_id,
             'order_date':   str(self.order_date),
             'order_status': self.order_status,
-            'total_amount': self.calculated_total,
+            'total_amount': stored if stored is not None else self.calculated_total,
+            'grand_total':  float(self.grand_total) if self.grand_total else 0,
+            'payment_mode': self.payment_mode,
         }
 
 
@@ -147,15 +160,17 @@ class OrderItem(db.Model):
     product_id    = db.Column(db.Integer, db.ForeignKey('products.product_id'), nullable=False)
 
     # ── CHANGED: Integer → Numeric(10,3) to support 0.250 kg, 1.500 litre ───
-    quantity      = db.Column(db.Numeric(10, 3), nullable=False, default=1.000)
+    quantity  = db.Column(db.Numeric(10, 3), nullable=False, default=1.000)
 
     # ── NEW: unit label snapshot at time of sale ──────────────────────────────
-    unit_type     = db.Column(db.String(20), nullable=False, default='Units')
+    unit_type = db.Column(db.String(20), nullable=False, default='Units')
+
     selling_price = db.Column(db.Numeric(10, 2), nullable=False, default=0)
     cost_price    = db.Column(db.Numeric(10, 2), nullable=False, default=0)
 
-    unit_price = db.Column(db.Numeric(10, 2))
-    subtotal = db.Column(db.Numeric(10, 2))
+    # Fixed: non-nullable with default 0.00 — prevents TypeError in calculated_total
+    unit_price = db.Column(db.Numeric(10, 2), nullable=False, default=0.00)
+    subtotal   = db.Column(db.Numeric(10, 2), nullable=True)
 
     @property
     def quantity_display(self):
@@ -164,15 +179,14 @@ class OrderItem(db.Model):
         if qty == int(qty):
             return str(int(qty))
         return f"{qty:.3f}".rstrip('0')
-    
+
     @property
     def revenue(self):
-         return float(self.quantity) * float(self.selling_price)
+        return float(self.quantity) * float(self.selling_price)
+
     @property
     def cost(self):
         return float(self.quantity) * float(self.cost_price)
-
-    
 
     @property
     def profit(self):
@@ -191,6 +205,8 @@ class OrderItem(db.Model):
             'product_id':    self.product_id,
             'quantity':      float(self.quantity),
             'unit_type':     self.unit_type,
+            'unit_price':    float(self.unit_price),
+            'subtotal':      float(self.subtotal) if self.subtotal else 0,
         }
 
 
@@ -217,46 +233,20 @@ class StockEntry(db.Model):
     __tablename__ = 'stock_entries'
 
     entry_id       = db.Column(db.Integer, primary_key=True, autoincrement=True)
-
     product_id     = db.Column(db.Integer, db.ForeignKey('products.product_id'), nullable=False)
-    product = db.relationship('Product')
-    quantity_added = db.Column(db.Numeric(10, 3), nullable=False)   # Decimal for weight
+    product        = db.relationship('Product')
+    quantity_added = db.Column(db.Numeric(10, 3), nullable=False)
     previous_stock = db.Column(db.Numeric(10, 3), nullable=False)
     new_stock      = db.Column(db.Numeric(10, 3), nullable=False)
     remarks        = db.Column(db.String(255), nullable=True)
-    supplier_name = db.Column(db.String(100), nullable=True)
-
-    invoice_no = db.Column(db.String(50), nullable=True)
-
-    purchase_price = db.Column(
-    db.Numeric(10, 2),
-    nullable=False,
-    default=0
-    )
-    gst_percent = db.Column(
-    db.Numeric(5,2),
-    nullable=False,
-    default=0
-    )
-
-    gst_amount = db.Column(
-    db.Numeric(10,2),
-    nullable=False,
-    default=0
-    )
-
-    invoice_total = db.Column(
-    db.Numeric(10,2),
-    nullable=False,
-    default=0
-    )
-
-    gst_claimed = db.Column(
-    db.Boolean,
-    nullable=False,
-    default=False
-    )
-    entry_date     = db.Column(db.DateTime, default=datetime.now)
+    supplier_name  = db.Column(db.String(100), nullable=True)
+    invoice_no     = db.Column(db.String(50), nullable=True)
+    purchase_price = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    gst_percent    = db.Column(db.Numeric(5, 2), nullable=False, default=0)
+    gst_amount     = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    invoice_total  = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    gst_claimed    = db.Column(db.Boolean, nullable=False, default=False)
+    entry_date     = db.Column(db.DateTime, default=datetime.utcnow)  # Fixed: utcnow
 
     def to_dict(self):
         return {
@@ -268,147 +258,45 @@ class StockEntry(db.Model):
             'remarks':        self.remarks,
             'entry_date':     str(self.entry_date),
         }
+
+
 class BusinessSettings(db.Model):
     __tablename__ = 'business_settings'
 
-    id = db.Column(db.Integer, primary_key=True)
-
-    # Business Info
-    shop_name = db.Column(db.String(120), nullable=False, default="ShopDesk")
-    owner_name = db.Column(db.String(120))
-    phone = db.Column(db.String(20))
-    email = db.Column(db.String(120))
-    address = db.Column(db.Text)
-
-    # Business Type
-    business_type = db.Column(
-        db.String(20),
-        nullable=False,
-        default="Retail"
-    )
+    id            = db.Column(db.Integer, primary_key=True)
+    shop_name     = db.Column(db.String(120), nullable=False, default='ShopDesk')
+    owner_name    = db.Column(db.String(120))
+    phone         = db.Column(db.String(20))
+    email         = db.Column(db.String(120))
+    address       = db.Column(db.Text)
+    business_type = db.Column(db.String(20), nullable=False, default='Retail')
 
     # GST
-    gst_enabled = db.Column(
-        db.Boolean,
-        nullable=False,
-        default=False
-    )
+    gst_enabled           = db.Column(db.Boolean, nullable=False, default=False)
+    gst_mode              = db.Column(db.String(20), nullable=False, default='Inclusive')
+    gst_number            = db.Column(db.String(30))
+    default_gst_rate      = db.Column(db.Numeric(5, 2), nullable=False, default=18.00)
+    gst_registration_type = db.Column(db.String(20), nullable=False, default='Regular')
 
-    gst_mode = db.Column(
-        db.String(20),
-        nullable=False,
-        default="Inclusive"
-    )
+    currency   = db.Column(db.String(10), nullable=False, default='INR')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)   # Fixed: utcnow
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,   # Fixed: utcnow
+                           onupdate=datetime.utcnow)
 
-    gst_number = db.Column(db.String(30))
-    default_gst_rate = db.Column(
-    db.Numeric(5,2),
-    nullable=False,
-    default=18.00
-    )
-    gst_registration_type = db.Column(
-    db.String(20),
-    nullable=False,
-    default="Regular"
-    )
-    currency = db.Column(
-        db.String(10),
-        nullable=False,
-        default="INR"
-    )
-
-    created_at = db.Column(
-        db.DateTime,
-        default=datetime.now
-    )
-
-    updated_at = db.Column(
-        db.DateTime,
-        default=datetime.now,
-        onupdate=datetime.now
-    )
-    
     def __repr__(self):
-        return "<BusinessSettings>"
+        return '<BusinessSettings>'
+
 
 class Supplier(db.Model):
-    __tablename__ = "suppliers"
+    __tablename__ = 'suppliers'
 
-    supplier_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    supplier_id   = db.Column(db.Integer, primary_key=True, autoincrement=True)
     supplier_name = db.Column(db.String(120), nullable=False)
-    contact_person = db.Column(db.String(100))
-    phone = db.Column(db.String(20))
-    email = db.Column(db.String(120))
-    gst_number = db.Column(db.String(30))
-    address = db.Column(db.Text)
-
-    created_at = db.Column(
-        db.DateTime,
-        default=datetime.now
-    )
-
-    products = db.relationship(
-        "Product",
-        backref="supplier",
-        lazy=True
-    )
+    phone         = db.Column(db.String(20))
+    email         = db.Column(db.String(120))
+    gst_number    = db.Column(db.String(30))
+    address       = db.Column(db.Text)
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)  # Fixed: utcnow
 
     def __repr__(self):
-        return f"<Supplier {self.supplier_name}>"
-    
-class PurchaseHistory(db.Model):
-        __tablename__ = "purchase_history"
-
-        purchase_id = db.Column(db.Integer, primary_key=True)
-
-        purchase_date = db.Column(db.DateTime, nullable=False)
-
-        supplier_id = db.Column(
-            db.Integer,
-            db.ForeignKey("suppliers.supplier_id"),
-            nullable=True
-        )
-
-        product_id = db.Column(
-            db.Integer,
-            db.ForeignKey("products.product_id"),
-            nullable=False
-        )
-
-        invoice_no = db.Column(db.String(50))
-
-        quantity = db.Column(db.Numeric(10,2), nullable=False)
-
-        purchase_price = db.Column(db.Numeric(10,2), nullable=False)
-
-        gst_percent = db.Column(db.Numeric(5,2), default=0)
-
-        gst_amount = db.Column(db.Numeric(10,2), default=0)
-
-        total_amount = db.Column(db.Numeric(10,2), nullable=False)
-
-        payment_status = db.Column(
-            db.String(20),
-            default="Paid"
-        )
-
-        payment_method = db.Column(
-            db.String(30),
-            default="Cash"
-        )
-
-        due_date = db.Column(db.Date)
-
-        remarks = db.Column(db.Text)
-
-        created_at = db.Column(
-            db.DateTime,
-            default=datetime.now
-        )
-
-        supplier = db.relationship(
-            "Supplier",
-            backref="purchases"
-        )
-
-        product = db.relationship("Product", backref="purchase_history")
+        return f'<Supplier {self.supplier_name}>'

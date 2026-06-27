@@ -740,10 +740,32 @@ function changeQty(direction) {
 /* ── LINE TOTAL ──────────────────────────────────────────────────────────────
    Real-time price × qty as cashier types
 */
-function updateLineTotal() {
-  const qty   = parseFloat(document.getElementById('qtyInput').value) || 0;
-  const total = modal.price * qty;
-  document.getElementById('modalLineTotal').textContent = '₹' + total.toFixed(2);
+function convertToBase(qty, selectedUnit, baseUnit){
+
+    if(baseUnit === "kg" && selectedUnit === "g"){
+        return qty / 1000;
+    }
+
+    if(baseUnit === "litre" && selectedUnit === "ml"){
+        return qty / 1000;
+    }
+
+    return qty;
+}
+function updateLineTotal(){
+
+    const qty = parseFloat(document.getElementById("qtyInput").value) || 0;
+
+    const baseQty = convertToBase(
+        qty,
+        modal.active_unit,
+        modal.unit_type
+    );
+
+    const total = modal.price * baseQty;
+
+    document.getElementById("modalLineTotal").textContent =
+        "₹" + total.toFixed(2);
 }
 
 
@@ -752,7 +774,13 @@ function updateLineTotal() {
    One product can appear once in the cart (increments if tapped again).
 */
 function confirmAddToCart() {
-  const qty = parseFloat(document.getElementById('qtyInput').value);
+  const enteredQty = parseFloat(document.getElementById("qtyInput").value);
+
+const qty = convertToBase(
+    enteredQty,
+    modal.active_unit,
+    modal.unit_type
+);
 
   if (!qty || qty <= 0) {
     document.getElementById('qtyInput').focus();

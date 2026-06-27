@@ -161,8 +161,8 @@ def edit(product_id):
         product.unit_type = request.form.get('unit_type', product.unit_type)
         product.cost_price = float(request.form.get('cost_price', 0) or 0)
         product.reorder_level = int(request.form.get('reorder_level', 10) or 10)
-        discount_type = request.form.get("discount_type", "none")
-        discount_value = float(request.form.get("discount_value", 0) or 0)
+        product.discount_type = request.form.get("discount_type", "none")
+        product.discount_value = float(request.form.get("discount_value", 0) or 0)
 
         existing = Product.query.filter(
             func.lower(Product.product_name) == product.product_name.lower(),

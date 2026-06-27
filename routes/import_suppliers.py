@@ -6,7 +6,6 @@ from models import Supplier
 supplier_import_bp = Blueprint(
     "supplier_import",
     __name__,
-    url_prefix="/suppliers"
 )
 
 
@@ -26,7 +25,6 @@ def import_suppliers():
 
             required = [
                 "Supplier Name",
-                "Contact Person",
                 "Phone",
                 "Email",
                 "GST Number",
@@ -62,11 +60,10 @@ def import_suppliers():
 
                 supplier = Supplier(
                     supplier_name=name,
-                    contact_person=str(row["Contact Person"]),
-                    phone=str(row["Phone"]),
-                    email=str(row["Email"]),
-                    gst_number=str(row["GST Number"]),
-                    address=str(row["Address"])
+                    phone=str(row.get("Phone", "")),
+                    email=str(row.get("Email", "")),
+                    gst_number=str(row.get("GST Number", "")),
+                    address=str(row.get("Address", ""))
                 )
 
                 db.session.add(supplier)
@@ -92,7 +89,6 @@ def download_template():
 
     data = {
         "Supplier Name": ["ABC Distributors"],
-        "Contact Person": ["Rahul Sharma"],
         "Phone": ["9876543210"],
         "Email": ["abc@email.com"],
         "GST Number": ["18ABCDE1234F1Z5"],
