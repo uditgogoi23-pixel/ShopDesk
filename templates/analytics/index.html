@@ -54,14 +54,17 @@
 <div class="kpi-grid mb-24">
   <div class="kpi-card" style="--kpi-accent: #f59e0b;">
     <div class="kpi-label">Total Revenue ({{ days }}d)</div>
-    <div class="kpi-value">₹{{ "%.0f"|format(avg_ov.total or 0) }}</div>
-    <div class="kpi-sub">Across {{ avg_ov.orders or 0 }} orders</div>
-  </div>
-  <div class="kpi-card" style="--kpi-accent: #3b82f6;">
-    <div class="kpi-label">Avg Order Value</div>
-    <div class="kpi-value">₹{{ "%.0f"|format(avg_ov.avg or 0) }}</div>
-    <div class="kpi-sub">Per transaction ({{ days }}d)</div>
-  </div>
+  <div class="kpi-card" style="--kpi-accent: #10b981;">
+          <div class="kpi-label">Total Profit</div>
+          <div class="kpi-value">₹{{ "%.0f"|format(total_profit or 0) }}</div>
+          <div class="kpi-sub">Gross margin {{ margin_percent }}%</div>
+        </div>
+        <div class="kpi-card" style="--kpi-accent: #f97316;">
+          <div class="kpi-label">Stock Depletion Alerts</div>
+          <div class="kpi-value">{{ depletion|length }}</div>
+          <div class="kpi-sub">Products running out &lt; 30 days</div>
+        </div>
+      </div>  
   <div class="kpi-card" style="--kpi-accent: #ef4444;">
     <div class="kpi-label">Low Stock SKUs</div>
     <div class="kpi-value">{{ low_stock|length }}</div>
@@ -73,6 +76,27 @@
     <div class="kpi-sub">Products with zero sales</div>
   </div>
 </div>
+<div class="kpi-grid mb-24">
+
+  <!-- existing 4 cards stay here -->
+  <div class="kpi-card" ...>Total Revenue</div>
+  <div class="kpi-card" ...>Avg Order Value</div>
+  <div class="kpi-card" ...>Low Stock SKUs</div>
+  <div class="kpi-card" ...>Dead Stock</div>
+
+  <div class="kpi-card" style="--kpi-accent: #10b981;">
+    <div class="kpi-label">Total Profit</div>
+    <div class="kpi-value">₹{{ "%.0f"|format(total_profit or 0) }}</div>
+    <div class="kpi-sub">Gross margin {{ margin_percent }}%</div>
+  </div>
+  <div class="kpi-card" style="--kpi-accent: #f97316;">
+    <div class="kpi-label">Stock Depletion Alerts</div>
+    <div class="kpi-value">{{ depletion|length }}</div>
+    <div class="kpi-sub">Products running out &lt; 30 days</div>
+  </div>
+
+</div>
+
 {% endif %}
 
 <!-- ── GRID: Top Sellers + Category Revenue ───────────────────────────────── -->
@@ -103,8 +127,7 @@
               <td>
                 <div style="font-weight:600; font-size:12px;">{{ p.product_name }}</div>
                 <div class="rank-bar" style="margin-top:4px;">
-                  <div class="rank-fill"
-                       style="width:{{ (p.units_sold / max_units * 100)|int }}%"></div>
+                  <div class="rank-fill" {{ ('style="width:' ~ ((p.units_sold / max_units * 100)|int) ~ '%;"')|safe }}></div>
                 </div>
               </td>
               <td class="text-right mono">{{ p.units_sold }}</td>
@@ -317,6 +340,59 @@
     </div>
 
 </div>
+<!-- REVENUE & PROFIT TREND -->
+<div class="analytics-section">
+  <div class="section-title">📈 Revenue & Profit Trend</div>
+  <div class="card">
+    <div class="card-body">
+      <div class="chart-container" style="height:280px;">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- STOCK DEPLETION FORECAST -->
+{% if depletion %}
+<div class="analytics-section">
+  <div class="section-title">⏳ Stock Depletion Forecast</div>
+  <div class="card">
+    <div class="card-body" style="padding:0;">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th class="text-right">Stock Left</th>
+            <th class="text-right">Daily Sales Rate</th>
+            <th class="text-right">Days Until Empty</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in depletion %}
+          <tr>
+            <td>{{ r.product_name }}</td>
+            <td><span class="badge badge-neutral">{{ r.category or '—' }}</span></td>
+            <td class="text-right mono">{{ r.stock }}</td>
+            <td class="text-right mono">{{ r.daily_rate }}/day</td>
+            <td class="text-right mono fw-bold">{{ r.days_left }} days</td>
+            <td>
+              {% if r.days_left <= 3 %}
+                <span class="badge badge-danger">🚨 Critical</span>
+              {% elif r.days_left <= 7 %}
+                <span class="badge badge-warning">⚠️ This Week</span>
+              {% else %}
+                <span class="badge badge-neutral">📦 This Month</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
 <!-- ── INVENTORY TURNOVER ─────────────────────────────────────────────────── -->
 <div class="analytics-section">
   <div class="section-title">🔄 Inventory Turnover Rate</div>
@@ -367,8 +443,8 @@
   const catData = {{ rev_by_cat | tojson }};
   if (!catData.length) return;
 
-  const labels = catData.map(r => r[0] || 'Other');
-  const values = catData.map(r => parseFloat(r[1]));
+  const labels = catData.map(r => r.category || 'Other');
+  const values = catData.map(r => parseFloat(r.revenue));
 
   const colours = [
     '#1a2340','#2e3d70','#f59e0b','#3b82f6',
@@ -395,6 +471,83 @@
         tooltip: {
           callbacks: {
             label: ctx => ' ₹' + ctx.parsed.toLocaleString('en-IN')
+          }
+        }
+      }
+    }
+  });
+})();
+
+// Revenue & Profit Trend Chart
+(function(){
+  const daily   = {{ daily_data | tojson }};
+  const forecast = {{ forecast | tojson }};
+  if (!daily.length) return;
+
+  const allDays     = [...daily, ...forecast];
+  const labels      = allDays.map(d => d.day);
+  const revenues    = daily.map(d => d.revenue);
+  const profits     = daily.map(d => d.profit);
+  const forecastRev = forecast.map(d => d.revenue);
+
+  // Pad actual data with nulls for forecast period
+  const revPadded  = [...revenues,  ...Array(forecast.length).fill(null)];
+  const profPadded = [...profits,   ...Array(forecast.length).fill(null)];
+  const forecastPadded = [...Array(daily.length).fill(null), ...forecastRev];
+
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Revenue',
+          data: revPadded,
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245,158,11,0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+        },
+        {
+          label: 'Profit',
+          data: profPadded,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,0.08)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+        },
+        {
+          label: 'Forecast (7d)',
+          data: forecastPadded,
+          borderColor: '#3b82f6',
+          borderDash: [6, 4],
+          backgroundColor: 'rgba(59,130,246,0.06)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+          pointStyle: 'triangle',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: ctx => ' ₹' + (ctx.parsed.y || 0).toLocaleString('en-IN')
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: val => '₹' + val.toLocaleString('en-IN')
           }
         }
       }

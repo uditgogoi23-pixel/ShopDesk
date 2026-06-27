@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Export Data{% endblock %}
+
+{% block breadcrumb %}
+  <strong>Export Data</strong>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:600px; margin:0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Export to Excel</span>
+    </div>
+    <div class="card-body">
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+
+        <a href="{{ url_for('export.export_products') }}" class="btn btn-outline"
+           style="display:flex; align-items:center; gap:10px; padding:14px 16px;">
+          <span style="font-size:1.3rem;">📦</span>
+          <div>
+            <div style="font-weight:600;">Products</div>
+            <div style="font-size:0.8rem; color:var(--slate-400);">All products with price, stock, margin</div>
+          </div>
+        </a>
+
+        <a href="{{ url_for('export.export_sales') }}" class="btn btn-outline"
+           style="display:flex; align-items:center; gap:10px; padding:14px 16px;">
+          <span style="font-size:1.3rem;">🧾</span>
+          <div>
+            <div style="font-weight:600;">Sales / Orders</div>
+            <div style="font-size:0.8rem; color:var(--slate-400);">All orders with items, amounts, payment mode</div>
+          </div>
+        </a>
+
+        <a href="{{ url_for('export.export_stock') }}" class="btn btn-outline"
+           style="display:flex; align-items:center; gap:10px; padding:14px 16px;">
+          <span style="font-size:1.3rem;">📋</span>
+          <div>
+            <div style="font-weight:600;">Stock-In History</div>
+            <div style="font-size:0.8rem; color:var(--slate-400);">All purchase entries with GST details</div>
+          </div>
+        </a>
+
+        <a href="{{ url_for('export.export_gst') }}" class="btn btn-outline"
+           style="display:flex; align-items:center; gap:10px; padding:14px 16px;">
+          <span style="font-size:1.3rem;">🧮</span>
+          <div>
+            <div style="font-weight:600;">GST Summary</div>
+            <div style="font-size:0.8rem; color:var(--slate-400);">Input vs Output GST, net payable to govt</div>
+          </div>
+        </a>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -143,8 +143,9 @@
           <div class="d-flex align-center gap-10" style="justify-content:center;">
             <a href="{{ url_for('products.edit', product_id=p.product_id) }}"
                class="btn btn-outline btn-sm">Edit</a>
-            <a href="{{ url_for('products.refill_stock', product_id=p.    product_id) }}"
-               class="btn btn-success btn-sm">Refill</a>   
+            <a href="{{ url_for('stock.add') }}?product_id={{ p.product_id }}" class="btn btn-sm">
+               Refill
+            </a>  
             <form id="del-{{ p.product_id }}"
                   action="{{ url_for('products.delete', product_id=p.product_id) }}"
                   method="POST" style="display:inline;">

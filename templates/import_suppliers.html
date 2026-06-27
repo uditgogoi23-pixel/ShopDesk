@@ -1,6 +1,6 @@
 {% extends "base.html" %}
+{% block title %}Import Suppliers{% endblock %}
 
-{% block title %}Import Products{% endblock %}
 
 {% block content %}
 
@@ -11,18 +11,18 @@
 
         <div>
             <h1 class="fw-bold mb-1">
-                📦 Import Products
+                🚚 Import Suppliers
             </h1>
 
             <p class="text-muted mb-0">
-                Upload an Excel (.xlsx, .xls or .csv) file to import multiple products.
+                Upload an Excel (.xlsx, .xls or .csv) file to import suppliers.
             </p>
         </div>
 
-        <a href="{{ url_for('imports.download_template') }}"
+        <a href="{{ url_for('supplier_import.download_template') }}"
            class="btn btn-success btn-sm px-4 py-2">
             <i class="fas fa-download me-2"></i>
-            Download Template
+            Download Supplier Template
         </a>
 
     </div>
@@ -66,12 +66,10 @@
                             onclick="document.getElementById('excel_file').click()">
 
                             <i class="fas fa-folder-open me-2"></i>
-                            Browse Excel File
+                            Browse Supplier File
 
                         </button>
-                        <i class="fas fa-folder-open me-2"></i>
-                        Browse Excel File
-                    </label>
+                        
 
                     <div id="filename" class="filename mt-3">
                         📄 No file selected
@@ -98,7 +96,7 @@
 
                         <i class="fas fa-upload me-2"></i>
 
-                        Import Products
+                        Import Suppliers
 
                     </button>
 
@@ -132,9 +130,9 @@
 
                 <div class="col-md-6">
 
-                    <p>✅ One row = One product</p>
+                    <p>✅ One row = One supplier</p>
 
-                    <p>✅ Duplicate products are skipped automatically</p>
+            <p>✅ Duplicate suppliers are skipped automatically</p>
 
                 </div>
 

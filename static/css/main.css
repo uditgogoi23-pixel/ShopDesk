@@ -861,3 +861,204 @@ tbody tr:hover td        { background: #eef6ff; }
   align-items: center;
   flex-wrap: wrap;
 }
+.import-box{
+    border:2px dashed #d6dbe8;
+    border-radius:18px;
+    padding:45px;
+    background:#f8fafc;
+    transition:.25s;
+}
+
+.import-box:hover{
+    border-color:#2563eb;
+    background:#eff6ff;
+}
+
+.import-icon{
+    font-size:60px;
+    color:#2563eb;
+    margin-bottom:15px;
+}
+
+.filename{
+    color:#64748b;
+    margin-top:12px;
+    font-weight:500;
+}
+
+/* ================= IMPORT PRODUCTS ================= */
+
+/* ==========================================================
+   IMPORT PRODUCTS
+========================================================== */
+
+.import-card{
+    padding:40px;
+    border-radius:18px;
+    background:#fff;
+    box-shadow:var(--shadow-sm);
+}
+
+.import-box{
+    max-width:700px;
+    margin:0 auto;
+    padding:50px 40px;
+    text-align:center;
+    background:#fbfcfe;
+    border:2px dashed #dbe3ef;
+    border-radius:18px;
+    transition:all .25s ease;
+}
+
+.import-box:hover{
+    border-color:var(--info);
+    background:#f5f9ff;
+}
+
+.import-icon{
+    width:90px;
+    height:90px;
+    margin:0 auto 20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#eff6ff;
+    color:var(--info);
+    border-radius:50%;
+    font-size:42px;
+}
+
+.import-box h2{
+    font-size:28px;
+    font-weight:700;
+    color:var(--slate-800);
+    margin-bottom:10px;
+}
+
+.import-box h3{
+    font-size:26px;
+    font-weight:700;
+    color:var(--slate-800);
+    margin-bottom:10px;
+}
+
+.import-box p{
+    font-size:15px;
+    color:var(--slate-500);
+    line-height:1.6;
+    margin-bottom:28px;
+}
+
+.browse-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:12px 24px;
+    background:#fff;
+    color:var(--info);
+    border:2px solid var(--info);
+    border-radius:10px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.browse-btn:hover{
+    background:var(--info);
+    color:#fff;
+}
+
+.filename{
+    margin-top:18px;
+    color:var(--slate-500);
+    font-size:15px;
+    font-weight:500;
+}
+
+.import-btn{
+    margin-top:28px;
+    min-width:220px;
+    height:48px;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:600;
+}
+
+.template-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 18px;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:600;
+}
+
+.tips-card{
+    margin-top:24px;
+    padding:25px;
+    border-radius:18px;
+}
+
+.tips-card h4{
+    margin-bottom:20px;
+    font-size:18px;
+    font-weight:700;
+}
+
+.tips-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:16px;
+}
+
+.tips-grid div{
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:14px 16px;
+    font-size:14px;
+    color:var(--slate-700);
+}
+
+.table-wrap{
+    overflow-x:auto;
+}
+
+.table-wrap table{
+    margin-bottom:0;
+}
+
+@media (max-width:768px){
+
+    .import-card{
+        padding:24px;
+    }
+
+    .import-box{
+        padding:35px 20px;
+    }
+
+    .import-box h2,
+    .import-box h3{
+        font-size:22px;
+    }
+
+    .tips-grid{
+        grid-template-columns:1fr;
+    }
+
+    .template-btn{
+        width:100%;
+        justify-content:center;
+    }
+
+    .import-btn{
+        width:100%;
+    }
+
+}
+#clearFile{
+    display:none;
+    margin-top:12px;
+}

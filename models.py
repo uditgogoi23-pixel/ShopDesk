@@ -58,7 +58,11 @@ class Product(db.Model):
                           comment='Low-stock alert threshold')
 
     image = db.Column(db.String(255), default="default_product.png")
-
+    supplier_id = db.Column(
+        db.Integer,
+        db.ForeignKey("suppliers.supplier_id"),
+        nullable=True
+    )
     # Relationships
     order_items = db.relationship('OrderItem', backref='product', lazy=True)
 
@@ -323,29 +327,19 @@ class BusinessSettings(db.Model):
         default=datetime.now,
         onupdate=datetime.now
     )
+    
     def __repr__(self):
         return "<BusinessSettings>"
 
 class Supplier(db.Model):
     __tablename__ = "suppliers"
 
-    supplier_id = db.Column(
-    db.Integer,
-    primary_key=True,
-    autoincrement=True
-    )
-
-    supplier_name = db.Column(
-        db.String(120),
-        nullable=False
-    )
-
+    supplier_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    supplier_name = db.Column(db.String(120), nullable=False)
+    contact_person = db.Column(db.String(100))
     phone = db.Column(db.String(20))
-
     email = db.Column(db.String(120))
-
     gst_number = db.Column(db.String(30))
-
     address = db.Column(db.Text)
 
     created_at = db.Column(
@@ -353,5 +347,68 @@ class Supplier(db.Model):
         default=datetime.now
     )
 
+    products = db.relationship(
+        "Product",
+        backref="supplier",
+        lazy=True
+    )
+
     def __repr__(self):
         return f"<Supplier {self.supplier_name}>"
+    
+class PurchaseHistory(db.Model):
+        __tablename__ = "purchase_history"
+
+        purchase_id = db.Column(db.Integer, primary_key=True)
+
+        purchase_date = db.Column(db.DateTime, nullable=False)
+
+        supplier_id = db.Column(
+            db.Integer,
+            db.ForeignKey("suppliers.supplier_id"),
+            nullable=True
+        )
+
+        product_id = db.Column(
+            db.Integer,
+            db.ForeignKey("products.product_id"),
+            nullable=False
+        )
+
+        invoice_no = db.Column(db.String(50))
+
+        quantity = db.Column(db.Numeric(10,2), nullable=False)
+
+        purchase_price = db.Column(db.Numeric(10,2), nullable=False)
+
+        gst_percent = db.Column(db.Numeric(5,2), default=0)
+
+        gst_amount = db.Column(db.Numeric(10,2), default=0)
+
+        total_amount = db.Column(db.Numeric(10,2), nullable=False)
+
+        payment_status = db.Column(
+            db.String(20),
+            default="Paid"
+        )
+
+        payment_method = db.Column(
+            db.String(30),
+            default="Cash"
+        )
+
+        due_date = db.Column(db.Date)
+
+        remarks = db.Column(db.Text)
+
+        created_at = db.Column(
+            db.DateTime,
+            default=datetime.now
+        )
+
+        supplier = db.relationship(
+            "Supplier",
+            backref="purchases"
+        )
+
+        product = db.relationship("Product", backref="purchase_history")

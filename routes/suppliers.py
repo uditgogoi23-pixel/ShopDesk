@@ -21,7 +21,7 @@ def suppliers():
     supplier_count = len(all_suppliers)
 
     return render_template(
-        "suppliers.html",
+        "suppliers/index.html",
         suppliers=all_suppliers,
         purchase_value=purchase_value,
         total_quantity=total_quantity,

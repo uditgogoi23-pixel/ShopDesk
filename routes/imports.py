@@ -1,21 +1,17 @@
-from flask import Blueprint, render_template, request, flash
+from flask import Blueprint, render_template, request, flash, redirect, url_for, send_file
 import pandas as pd
-from flask import redirect, url_for
+from sqlalchemy import func
+
 from extensions import db
 from models import Product
-from sqlalchemy import func
-from flask import send_file
 
 imports_bp = Blueprint("imports", __name__)
 
 
 @imports_bp.route("/", methods=["GET", "POST"])
 def import_products():
-    print("METHOD:", request.method)
 
     if request.method == "POST":
-        print("POST RECEIVED")
-        print(request.files)
 
         file = request.files.get("excel_file")
 
@@ -25,23 +21,26 @@ def import_products():
 
         try:
             df = pd.read_excel(file)
+            print("Columns:", df.columns.tolist())
 
             required_columns = [
                 "Product Name",
                 "Category",
-                "Price",
-                "Stock",
+                "Selling Price",
+                "Opening Stock",
+                "Purchase Price",
+                "Unit",
                 "Reorder Level"
             ]
 
-            missing_columns = [
+            missing = [
                 col for col in required_columns
                 if col not in df.columns
             ]
 
-            if missing_columns:
+            if missing:
                 flash(
-                    f"Missing required column(s): {', '.join(missing_columns)}",
+                    f"Missing required column(s): {', '.join(missing)}",
                     "danger"
                 )
                 return render_template("import_products.html")
@@ -52,7 +51,6 @@ def import_products():
             for _, row in df.iterrows():
 
                 product_name = str(row["Product Name"]).strip()
-                category = str(row["Category"]).strip()
 
                 existing = Product.query.filter(
                     func.lower(Product.product_name) == product_name.lower()
@@ -64,12 +62,13 @@ def import_products():
 
                 product = Product(
                     product_name=product_name,
-                    category=category,
-                    price=row["Price"],
-                    stock=row["Stock"],
-                    unit_type="Units",
-                    cost_price=0,
-                    reorder_level=row["Reorder Level"]
+                    category=row["Category"],
+                    price=float(row["Selling Price"]),
+                    stock=float(row["Opening Stock"]),
+                    unit_type=row["Unit"],
+                    cost_price=float(row["Purchase Price"]),
+                    reorder_level=float(row["Reorder Level"]),
+                    image="default_product.png"
                 )
 
                 db.session.add(product)
@@ -78,7 +77,7 @@ def import_products():
             db.session.commit()
 
             flash(
-                f"Import completed! Imported: {imported} | Skipped (duplicates): {skipped}",
+                f"Import completed! Imported: {imported} | Skipped: {skipped}",
                 "success"
             )
 
@@ -86,17 +85,20 @@ def import_products():
 
         except Exception as e:
             flash(f"Error reading Excel file: {e}", "danger")
-            return render_template("import_products.html")
 
     return render_template("import_products.html")
+
+
 @imports_bp.route("/download-template")
 def download_template():
 
     data = {
         "Product Name": ["Example Product"],
         "Category": ["Groceries"],
-        "Price": [100],
-        "Stock": [50],
+        "Selling Price": [100],
+        "Opening Stock": [50],
+        "Purchase Price": [80],
+        "Unit": ["Units"],
         "Reorder Level": [10]
     }
 
@@ -110,4 +112,3 @@ def download_template():
         as_attachment=True,
         download_name="product_import_template.xlsx"
     )
-    

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Stock History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Stock-In History</h1>
+  <a href="{{ url_for('stock.add') }}" class="btn btn-primary">+ Add Stock</a>
+</div>
+
+<div class="card">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Date</th>
+        <th>Product</th>
+        <th>Qty Added</th>
+        <th>Purchase Price</th>
+        <th>GST</th>
+        <th>Invoice Total</th>
+        <th>Supplier</th>
+        <th>Invoice No</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td>{{ e.entry_id }}</td>
+        <td>{{ e.entry_date.strftime('%d %b %Y, %I:%M %p') }}</td>
+        <td>{{ e.product.product_name }}</td>
+        <td>{{ e.quantity_added }} {{ e.product.unit_type }}</td>
+        <td>₹{{ "%.2f"|format(e.purchase_price) }}</td>
+        <td>{{ e.gst_percent }}% (₹{{ "%.2f"|format(e.gst_amount) }})</td>
+        <td>₹{{ "%.2f"|format(e.invoice_total) }}</td>
+        <td>{{ e.supplier_name or '—' }}</td>
+        <td>{{ e.invoice_no or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="9" style="text-align:center; color: var(--text-muted);">No stock entries yet.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
