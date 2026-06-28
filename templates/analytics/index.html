@@ -6,553 +6,947 @@
 {% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
+  /* ══════════════════════════════════════════════
+     PAGE HEADER & DATE BAR
+  ══════════════════════════════════════════════ */
+  .analytics-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .analytics-header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+  }
+  .date-range-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .preset-btn {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #fff;
+    color: #475569;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover, .preset-btn.active {
+    background: #0f172a;
+    color: #fff;
+    border-color: #0f172a;
+  }
+  .date-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    background: #fff;
+    font-size: 0.8rem;
+    color: #475569;
+  }
+  .date-input-wrap input {
+    border: none;
+    outline: none;
+    font-size: 0.8rem;
+    color: #0f172a;
+    width: 90px;
+    cursor: pointer;
+    background: transparent;
+  }
+
+  /* ══════════════════════════════════════════════
+     KPI CARDS  (new dynamic style)
+  ══════════════════════════════════════════════ */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+  }
+  .kpi-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+  .kpi-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.07); }
+  .kpi-card .kpi-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.4rem;
+  }
+  .kpi-card .kpi-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.1;
+  }
+  .kpi-card .kpi-sub,
+  .kpi-card .kpi-trend {
+    font-size: 0.78rem;
+    font-weight: 500;
+    margin-top: 0.35rem;
+    color: #64748b;
+  }
+  .trend-up   { color: #16a34a !important; }
+  .trend-down { color: #dc2626 !important; }
+  .trend-flat { color: #94a3b8 !important; }
+  .kpi-card .kpi-icon {
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    font-size: 1.4rem;
+    opacity: 0.15;
+  }
+  /* accent stripe */
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    border-radius: 12px 0 0 12px;
+    background: var(--kpi-accent, #3b82f6);
+  }
+
+  /* loading skeleton */
+  .skeleton {
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+    border-radius: 6px;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .skeleton { animation-iteration-count: 5; }
+
+  /* ══════════════════════════════════════════════
+     CHARTS GRID
+  ══════════════════════════════════════════════ */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    height: 420px;
+    position: relative;
+}
+  .chart-card h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0 0 1rem;
+  }
+  .chart-card canvas {
+    width: 100% !important;
+    height: 350px !important;
+}
+
+  /* ══════════════════════════════════════════════
+     SECTION CARDS  (old style, kept)
+  ══════════════════════════════════════════════ */
   .section-title {
-    font-size: 16px; font-weight: 700; color: var(--slate-800);
+    font-size: 16px; font-weight: 700; color: var(--slate-800, #1e293b);
     margin-bottom: 16px; padding-bottom: 8px;
-    border-bottom: 2px solid var(--amber-400);
+    border-bottom: 2px solid var(--amber-400, #f59e0b);
     display: inline-block;
   }
   .analytics-section { margin-bottom: 36px; }
-  .insight-tag {
-    display: inline-block; background: var(--amber-100); color: var(--navy-800);
-    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
-    letter-spacing: .5px; margin-bottom: 8px;
+
+  /* ══════════════════════════════════════════════
+     TABLES
+  ══════════════════════════════════════════════ */
+  .section-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
   }
+  .section-card h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0 0 1rem;
+  }
+  table.analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  .analytics-table th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .analytics-table td {
+    padding: 0.65rem 0.75rem;
+    color: #334155;
+    border-bottom: 1px solid #f8fafc;
+  }
+  .analytics-table tr:last-child td { border-bottom: none; }
+  .analytics-table tr:hover td { background: #f8fafc; }
+
+  /* rank badges */
+  .rank-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    font-size: 0.72rem; font-weight: 700;
+  }
+  .rank-1 { background:#fef9c3; color:#854d0e; }
+  .rank-2 { background:#f1f5f9; color:#475569; }
+  .rank-3 { background:#fef3c7; color:#92400e; }
+  .rank-n { background:#f8fafc; color:#94a3b8; }
+
+  /* mini progress bar in tables */
+  .mini-bar-wrap { background:#f1f5f9; border-radius:4px; height:6px; min-width:80px; }
+  .mini-bar      { height:6px; border-radius:4px; background:#3b82f6; }
+
+  /* growth chips */
   .growth-chip {
     font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 99px;
-    font-family: var(--font-mono);
+    font-family: var(--font-mono, monospace);
   }
-  .growth-pos { background: var(--success-bg); color: #065f46; }
-  .growth-neg { background: var(--danger-bg);  color: #991b1b; }
+  .growth-pos { background: #dcfce7; color: #065f46; }
+  .growth-neg { background: #fee2e2; color: #991b1b; }
+
+  /* turnover bar */
   .turnover-bar {
-    height: 4px; border-radius: 2px; background: var(--navy-700); margin-top: 4px;
+    height: 4px; border-radius: 2px; background: #1a2340; margin-top: 4px;
   }
+
+  /* inline badges */
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 4px; letter-spacing: .4px;
+  }
+  .badge-danger  { background:#fee2e2; color:#991b1b; }
+  .badge-warning { background:#fef3c7; color:#92400e; }
+  .badge-neutral { background:#f1f5f9; color:#475569; }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<div class="page-header">
-  <div class="page-header-left">
-    <h1>Business Analytics</h1>
-    <p>Insights to drive smarter retail decisions</p>
-  </div>
-  <form method="GET" class="d-flex align-center gap-10">
-    <label class="form-label mb-0">Period:</label>
-    <select name="days" class="form-control" onchange="this.form.submit()">
-      <option value="7"   {{ 'selected' if days==7 }}>Last 7 Days</option>
-      <option value="30"  {{ 'selected' if days==30 }}>Last 30 Days</option>
-      <option value="60"  {{ 'selected' if days==60 }}>Last 60 Days</option>
-      <option value="90"  {{ 'selected' if days==90 }}>Last 90 Days</option>
-    </select>
-  </form>
-</div>
+{# ─── Page Header ─── #}
+<div class="analytics-header">
+  <h1>📊 Analytics Dashboard</h1>
 
-<!-- ── SUMMARY CHIPS ──────────────────────────────────────────────────────── -->
-{% if avg_ov %}
-<div class="kpi-grid mb-24">
-  <div class="kpi-card" style="--kpi-accent: #f59e0b;">
-    <div class="kpi-label">Total Revenue ({{ days }}d)</div>
-  <div class="kpi-card" style="--kpi-accent: #10b981;">
-          <div class="kpi-label">Total Profit</div>
-          <div class="kpi-value">₹{{ "%.0f"|format(total_profit or 0) }}</div>
-          <div class="kpi-sub">Gross margin {{ margin_percent }}%</div>
-        </div>
-        <div class="kpi-card" style="--kpi-accent: #f97316;">
-          <div class="kpi-label">Stock Depletion Alerts</div>
-          <div class="kpi-value">{{ depletion|length }}</div>
-          <div class="kpi-sub">Products running out &lt; 30 days</div>
-        </div>
-      </div>  
-  <div class="kpi-card" style="--kpi-accent: #ef4444;">
-    <div class="kpi-label">Low Stock SKUs</div>
-    <div class="kpi-value">{{ low_stock|length }}</div>
-    <div class="kpi-sub">Need restocking now</div>
-  </div>
-  <div class="kpi-card" style="--kpi-accent: #8b5cf6;">
-    <div class="kpi-label">Dead Stock ({{ days }}d)</div>
-    <div class="kpi-value">{{ dead_stock|length }}</div>
-    <div class="kpi-sub">Products with zero sales</div>
-  </div>
-</div>
-<div class="kpi-grid mb-24">
-
-  <!-- existing 4 cards stay here -->
-  <div class="kpi-card" ...>Total Revenue</div>
-  <div class="kpi-card" ...>Avg Order Value</div>
-  <div class="kpi-card" ...>Low Stock SKUs</div>
-  <div class="kpi-card" ...>Dead Stock</div>
-
-  <div class="kpi-card" style="--kpi-accent: #10b981;">
-    <div class="kpi-label">Total Profit</div>
-    <div class="kpi-value">₹{{ "%.0f"|format(total_profit or 0) }}</div>
-    <div class="kpi-sub">Gross margin {{ margin_percent }}%</div>
-  </div>
-  <div class="kpi-card" style="--kpi-accent: #f97316;">
-    <div class="kpi-label">Stock Depletion Alerts</div>
-    <div class="kpi-value">{{ depletion|length }}</div>
-    <div class="kpi-sub">Products running out &lt; 30 days</div>
-  </div>
-
-</div>
-
-{% endif %}
-
-<!-- ── GRID: Top Sellers + Category Revenue ───────────────────────────────── -->
-<div class="grid-2 analytics-section">
-
-  <!-- Top 10 Selling Products -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">🏆 Top 10 Selling Products</span>
-      <span class="text-muted">Last {{ days }} days</span>
-    </div>
-    <div class="card-body" style="padding:0;">
-      {% if top_selling %}
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Product</th>
-              <th class="text-right">Units</th>
-              <th class="text-right">Revenue</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% set max_units = top_selling[0].units_sold %}
-            {% for p in top_selling %}
-            <tr>
-              <td class="text-muted">{{ loop.index }}</td>
-              <td>
-                <div style="font-weight:600; font-size:12px;">{{ p.product_name }}</div>
-                <div class="rank-bar" style="margin-top:4px;">
-                  <div class="rank-fill" {{ ('style="width:' ~ ((p.units_sold / max_units * 100)|int) ~ '%;"')|safe }}></div>
-                </div>
-              </td>
-              <td class="text-right mono">{{ p.units_sold }}</td>
-              <td class="text-right mono fw-bold">₹{{ "%.0f"|format(p.revenue) }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% else %}
-        <div class="empty-state"><h3>No sales data</h3><p>Complete sales to see rankings</p></div>
-      {% endif %}
+  <div class="date-range-bar">
+    <button class="preset-btn" data-days="7">7D</button>
+    <button class="preset-btn active" data-days="30">30D</button>
+    <button class="preset-btn" data-days="60">60D</button>
+    <button class="preset-btn" data-days="90">90D</button>
+    <div class="date-input-wrap">
+      📅
+      <input id="start-date" placeholder="Start">
+      →
+      <input id="end-date" placeholder="End">
     </div>
   </div>
-
-  <!-- Revenue by Category -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">📦 Revenue by Category</span>
-      <span class="text-muted">Last {{ days }} days</span>
-    </div>
-    <div class="card-body" style="padding-bottom:0;">
-      <div class="chart-container" style="height:220px;">
-        <canvas id="catChart"></canvas>
-      </div>
-      {% if rev_by_cat %}
-        <table style="margin-top:8px;">
-          <thead>
-            <tr><th>Category</th><th class="text-right">Revenue</th><th class="text-right">Orders</th></tr>
-          </thead>
-          <tbody>
-            {% for r in rev_by_cat %}
-            <tr>
-              <td>{{ r.category or 'Uncategorised' }}</td>
-              <td class="text-right mono fw-bold">₹{{ "%.0f"|format(r.revenue) }}</td>
-              <td class="text-right mono">{{ r.orders }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% endif %}
-    </div>
-  </div>
-
 </div>
 
-<!-- ── MONTHLY GROWTH TABLE ───────────────────────────────────────────────── -->
+
+{# ─── KPI Cards (loaded dynamically) ─── #}
+<div class="kpi-grid" id="kpi-grid">
+  {% for _ in range(6) %}
+  <div class="kpi-card">
+    <div class="skeleton" style="width:60%;margin-bottom:.5rem;height:.75rem;"></div>
+    <div class="skeleton" style="width:80%;height:1.6rem;"></div>
+    <div class="skeleton" style="width:50%;height:.75rem;margin-top:.35rem;"></div>
+  </div>
+  {% endfor %}
+</div>
+
+
+{# ─── Revenue Trend + Category Doughnut ─── #}
+<div class="charts-grid">
+  <div class="chart-card">
+    <h3>Revenue &amp; Profit Trend <span style="font-weight:400;color:#94a3b8;font-size:0.78rem;" id="trend-subtitle">— vs previous period</span></h3>
+    <canvas id="trendChart" height="220"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Revenue by Category</h3>
+    <canvas id="catChart" height="220"></canvas>
+  </div>
+</div>
+
+
+{# ─── Top Sellers (dynamic) ─── #}
+<div class="section-card">
+  <h3>🏆 Top Sellers</h3>
+  <table class="analytics-table">
+    <thead>
+      <tr>
+        <th>#</th><th>Product</th><th>Category</th>
+        <th>Units Sold</th><th>Revenue</th><th>Share</th>
+      </tr>
+    </thead>
+    <tbody id="sellers-tbody">
+      <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+{# ─── Monthly Growth (server-rendered, always visible) ─── #}
 <div class="analytics-section">
   <div class="section-title">📈 Monthly Sales Growth</div>
-  <div class="card">
-    <div class="card-body" style="padding:0;">
-      {% if monthly_growth %}
-        <table>
-          <thead>
-            <tr>
-              <th>Month</th>
-              <th class="text-right">Revenue</th>
-              <th class="text-right">Orders</th>
-              <th class="text-right">Growth</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in monthly_growth %}
-            <tr>
-              <td class="fw-bold">{{ row.month }}</td>
-              <td class="text-right mono">₹{{ "%.0f"|format(row.revenue) }}</td>
-              <td class="text-right mono">{{ row.orders }}</td>
-              <td class="text-right">
-                {% if row.growth > 0 %}
-                  <span class="growth-chip growth-pos">▲ {{ row.growth }}%</span>
-                {% elif row.growth < 0 %}
-                  <span class="growth-chip growth-neg">▼ {{ row.growth|abs }}%</span>
-                {% else %}
-                  <span class="text-muted">—</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% else %}
-        <div class="empty-state"><h3>No data yet</h3></div>
-      {% endif %}
-    </div>
-  </div>
-</div>
-
-<!-- ── GRID: Dead Stock + Low Stock ──────────────────────────────────────── -->
-<div class="grid-2 analytics-section">
-
-  <!-- Dead Stock -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">💀 Dead Stock ({{ days }}d)</span>
-      <span class="badge badge-danger">{{ dead_stock|length }}</span>
-    </div>
-    <div class="card-body" style="padding:0;">
-      {% if dead_stock %}
-        <table>
-          <thead>
-            <tr><th>Product</th><th>Category</th><th class="text-right">Stock</th><th class="text-right">Value</th></tr>
-          </thead>
-          <tbody>
-            {% for p in dead_stock %}
-            <tr>
-              <td>{{ p.product_name }}</td>
-              <td><span class="badge badge-neutral">{{ p.category or '—' }}</span></td>
-              <td class="text-right mono">{{ p.stock }}</td>
-              <td class="text-right mono">₹{{ "%.0f"|format(p.stock * p.price) }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% else %}
-        <div class="empty-state"><h3>No dead stock</h3><p>All products sold in this period</p></div>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- Low Stock Alerts -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">⚠ Reorder Alerts</span>
-      <span class="badge badge-warning">{{ low_stock|length }}</span>
-    </div>
-    <div class="card-body" style="padding:0;">
-      {% if low_stock %}
-        <table>
-          <thead>
-            <tr><th>Product</th><th>Category</th><th class="text-right">Stock Left</th></tr>
-          </thead>
-          <tbody>
-            {% for p in low_stock %}
-            <tr>
-              <td>{{ p.product_name }}</td>
-              <td><span class="badge badge-neutral">{{ p.category or '—' }}</span></td>
-              <td class="text-right">
-                {% if p.stock == 0 %}
-                  <span class="badge badge-danger">OUT</span>
-                {% elif p.stock <= 3 %}
-                  <span class="badge badge-danger">{{ p.stock }}</span>
-                {% else %}
-                  <span class="badge badge-warning">{{ p.stock }}</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% else %}
-        <div class="empty-state"><h3>Stock levels healthy</h3></div>
-      {% endif %}
-    </div>
-  </div>
-
-</div>
-<div class="grid-2 analytics-section">
-
-    <div class="card">
-        <div class="card-header">
-            <span class="card-title">🏆 Most Profitable Products</span>
-        </div>
-
-        <div class="card-body" style="padding:0;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th class="text-right">Profit</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for p in most_profitable %}
-                    <tr>
-                        <td>{{ p.product_name }}</td>
-                        <td class="text-right mono">
-                            ₹{{ "%.0f"|format(p.profit) }}
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <span class="card-title">📉 Least Profitable Products</span>
-        </div>
-
-        <div class="card-body" style="padding:0;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th class="text-right">Profit</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for p in least_profitable %}
-                    <tr>
-                        <td>{{ p.product_name }}</td>
-                        <td class="text-right mono">
-                            ₹{{ "%.0f"|format(p.profit) }}
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-</div>
-<!-- REVENUE & PROFIT TREND -->
-<div class="analytics-section">
-  <div class="section-title">📈 Revenue & Profit Trend</div>
-  <div class="card">
-    <div class="card-body">
-      <div class="chart-container" style="height:280px;">
-        <canvas id="trendChart"></canvas>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- STOCK DEPLETION FORECAST -->
-{% if depletion %}
-<div class="analytics-section">
-  <div class="section-title">⏳ Stock Depletion Forecast</div>
-  <div class="card">
-    <div class="card-body" style="padding:0;">
-      <table>
+  <div class="section-card" style="padding:0;">
+    {% if monthly_growth %}
+      <table class="analytics-table">
         <thead>
           <tr>
-            <th>Product</th>
-            <th>Category</th>
-            <th class="text-right">Stock Left</th>
-            <th class="text-right">Daily Sales Rate</th>
-            <th class="text-right">Days Until Empty</th>
-            <th>Status</th>
+            <th>Month</th>
+            <th>Revenue</th>
+            <th>Orders</th>
+            <th>Growth</th>
           </tr>
         </thead>
         <tbody>
-          {% for r in depletion %}
+          {% for row in monthly_growth %}
           <tr>
-            <td>{{ r.product_name }}</td>
-            <td><span class="badge badge-neutral">{{ r.category or '—' }}</span></td>
-            <td class="text-right mono">{{ r.stock }}</td>
-            <td class="text-right mono">{{ r.daily_rate }}/day</td>
-            <td class="text-right mono fw-bold">{{ r.days_left }} days</td>
+            <td style="font-weight:600;">{{ row.month }}</td>
+            <td>₹{{ "%.0f"|format(row.revenue) }}</td>
+            <td>{{ row.orders }}</td>
             <td>
-              {% if r.days_left <= 3 %}
-                <span class="badge badge-danger">🚨 Critical</span>
-              {% elif r.days_left <= 7 %}
-                <span class="badge badge-warning">⚠️ This Week</span>
+              {% if row.growth > 0 %}
+                <span class="growth-chip growth-pos">▲ {{ row.growth }}%</span>
+              {% elif row.growth < 0 %}
+                <span class="growth-chip growth-neg">▼ {{ row.growth|abs }}%</span>
               {% else %}
-                <span class="badge badge-neutral">📦 This Month</span>
+                <span style="color:#94a3b8;">—</span>
               {% endif %}
             </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
-    </div>
+    {% else %}
+      <div style="text-align:center;color:#94a3b8;padding:2rem;">No monthly data yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+
+{# ─── Most & Least Profitable (server-rendered) ─── #}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.75rem;">
+  <div class="section-card">
+    <h3>🏆 Most Profitable Products</h3>
+    {% if most_profitable %}
+      <table class="analytics-table">
+        <thead><tr><th>Product</th><th>Profit</th></tr></thead>
+        <tbody>
+          {% for p in most_profitable %}
+          <tr>
+            <td>{{ p.product_name }}</td>
+            <td style="font-weight:600;">₹{{ "%.0f"|format(p.profit) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div style="color:#94a3b8;padding:1rem 0;">No data yet.</div>
+    {% endif %}
+  </div>
+
+  <div class="section-card">
+    <h3>📉 Least Profitable Products</h3>
+    {% if least_profitable %}
+      <table class="analytics-table">
+        <thead><tr><th>Product</th><th>Profit</th></tr></thead>
+        <tbody>
+          {% for p in least_profitable %}
+          <tr>
+            <td>{{ p.product_name }}</td>
+            <td style="font-weight:600;">₹{{ "%.0f"|format(p.profit) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div style="color:#94a3b8;padding:1rem 0;">No data yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+
+{# ─── Dead Stock (dynamic) ─── #}
+<div class="section-card">
+  <h3>💀 Dead Stock <span style="font-weight:400;color:#94a3b8;font-size:0.78rem;">(0 units sold in period)</span></h3>
+  <table class="analytics-table">
+    <thead>
+      <tr><th>Product</th><th>Category</th><th>Stock On Hand</th><th>Est. Value</th><th>Status</th></tr>
+    </thead>
+    <tbody id="dead-tbody">
+      <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem;">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+{# ─── Low Stock / Reorder Alerts (server-rendered) ─── #}
+<div class="section-card">
+  <h3>⚠️ Reorder Alerts
+    {% if low_stock %}
+      <span class="badge badge-warning" style="margin-left:.5rem;">{{ low_stock|length }}</span>
+    {% endif %}
+  </h3>
+  {% if low_stock %}
+    <table class="analytics-table">
+      <thead>
+        <tr><th>Product</th><th>Category</th><th>Stock Left</th></tr>
+      </thead>
+      <tbody>
+        {% for p in low_stock %}
+        <tr>
+          <td style="font-weight:500;">{{ p.product_name }}</td>
+          <td><span class="badge badge-neutral">{{ p.category or '—' }}</span></td>
+          <td>
+            {% if p.stock == 0 %}
+              <span class="badge badge-danger">OUT</span>
+            {% elif p.stock <= 3 %}
+              <span class="badge badge-danger">{{ p.stock }}</span>
+            {% else %}
+              <span class="badge badge-warning">{{ p.stock }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div style="color:#22c55e;padding:.5rem 0;">✓ All stock levels healthy</div>
+  {% endif %}
+</div>
+
+
+{# ─── Stock Depletion Forecast (server-rendered) ─── #}
+{% if depletion %}
+<div class="analytics-section">
+  <div class="section-title">⏳ Stock Depletion Forecast</div>
+  <div class="section-card" style="padding:0;">
+    <table class="analytics-table">
+      <thead>
+        <tr>
+          <th>Product</th><th>Category</th>
+          <th>Stock Left</th><th>Daily Rate</th>
+          <th>Days Until Empty</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in depletion %}
+        <tr>
+          <td style="font-weight:500;">{{ r.product_name }}</td>
+          <td><span class="badge badge-neutral">{{ r.category or '—' }}</span></td>
+          <td>{{ r.stock }}</td>
+          <td>{{ r.daily_rate }}/day</td>
+          <td style="font-weight:700;">{{ r.days_left }} days</td>
+          <td>
+            {% if r.days_left <= 3 %}
+              <span class="badge badge-danger">🚨 Critical</span>
+            {% elif r.days_left <= 7 %}
+              <span class="badge badge-warning">⚠️ This Week</span>
+            {% else %}
+              <span class="badge badge-neutral">📦 This Month</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 {% endif %}
-<!-- ── INVENTORY TURNOVER ─────────────────────────────────────────────────── -->
+
+
+{# ─── Inventory Turnover (server-rendered) ─── #}
 <div class="analytics-section">
   <div class="section-title">🔄 Inventory Turnover Rate</div>
-  <div class="card">
-    <div class="card-body" style="padding:0;">
-      {% if inventory_tv %}
-        <table>
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Category</th>
-              <th class="text-right">Stock</th>
-              <th class="text-right">Units Sold ({{ days }}d)</th>
-              <th class="text-right">Turnover</th>
-              <th>Velocity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% set max_tv = inventory_tv[0].turnover if inventory_tv else 1 %}
-            {% for r in inventory_tv %}
-            <tr>
-              <td>{{ r.product_name }}</td>
-              <td><span class="badge badge-neutral">{{ r.category or '—' }}</span></td>
-              <td class="text-right mono">{{ r.stock }}</td>
-              <td class="text-right mono">{{ r.units_sold }}</td>
-              <td class="text-right mono fw-bold">{{ r.turnover }}</td>
-              <td style="width:120px;">
-                <div class="turnover-bar"
-                     style="width:{{ [((r.turnover / (max_tv or 1)) * 100)|int, 100]|min }}%;"></div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% else %}
-        <div class="empty-state"><h3>No turnover data</h3></div>
-      {% endif %}
-    </div>
+  <div class="section-card" style="padding:0;">
+    {% if inventory_tv %}
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>Product</th><th>Category</th>
+            <th>Stock</th><th>Units Sold ({{ days }}d)</th>
+            <th>Turnover</th><th>Velocity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set max_tv = inventory_tv[0].turnover if inventory_tv else 1 %}
+          {% for r in inventory_tv %}
+          <tr>
+            <td>{{ r.product_name }}</td>
+            <td><span class="badge badge-neutral">{{ r.category or '—' }}</span></td>
+            <td>{{ r.stock }}</td>
+            <td>{{ r.units_sold }}</td>
+            <td style="font-weight:700;">{{ r.turnover }}</td>
+            <td style="width:120px;">
+              <div class="turnover-bar"
+                   style="width:{{ [((r.turnover / (max_tv or 1)) * 100)|int, 100]|min }}%;"></div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div style="text-align:center;color:#94a3b8;padding:2rem;">No turnover data available.</div>
+    {% endif %}
   </div>
 </div>
 
 {% endblock %}
 
+
 {% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
-(function(){
-  const catData = {{ rev_by_cat | tojson }};
-  if (!catData.length) return;
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
+let startDate = formatDate(daysAgo(30));
+let endDate   = formatDate(new Date());
+let trendChart    = null;
+let categoryChart = null;
+let _debounceTimer  = null;
+let _abortController = null;
 
-  const labels = catData.map(r => r.category || 'Other');
-  const values = catData.map(r => parseFloat(r.revenue));
+// ══════════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════════
+function daysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+function formatDate(d) {
+  return d.toISOString().split('T')[0];
+}
+function fmtCurrency(n) {
+  return '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+}
 
-  const colours = [
-    '#1a2340','#2e3d70','#f59e0b','#3b82f6',
-    '#10b981','#8b5cf6','#ef4444','#06b6d4',
-    '#f97316','#84cc16'
-  ];
+// Cancellable fetch — automatically uses the current AbortController signal
+function afetch(url) {
+  return fetch(url, { signal: _abortController.signal });
+}
 
-  new Chart(document.getElementById('catChart'), {
-    type: 'doughnut',
-    data: {
-      labels,
-      datasets: [{
-        data: values,
-        backgroundColor: colours.slice(0, labels.length),
-        borderWidth: 2,
-        borderColor: '#fff',
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'right', labels: { font: { size: 11 }, padding: 12 } },
-        tooltip: {
-          callbacks: {
-            label: ctx => ' ₹' + ctx.parsed.toLocaleString('en-IN')
-          }
-        }
-      }
-    }
+// ══════════════════════════════════════════════════════════
+//  FLATPICKR
+// ══════════════════════════════════════════════════════════
+flatpickr('#start-date', {
+  defaultDate: startDate,
+  dateFormat: 'Y-m-d',
+  onChange: ([d]) => { startDate = formatDate(d); debouncedLoad(); }
+});
+flatpickr('#end-date', {
+  defaultDate: endDate,
+  dateFormat: 'Y-m-d',
+  onChange: ([d]) => { endDate = formatDate(d); debouncedLoad(); }
+});
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const days = parseInt(btn.dataset.days);
+    startDate = formatDate(daysAgo(days));
+    endDate   = formatDate(new Date());
+    document.querySelector('#start-date')._flatpickr.setDate(startDate, false);
+    document.querySelector('#end-date')._flatpickr.setDate(endDate, false);
+    debouncedLoad();
   });
-})();
+});
 
-// Revenue & Profit Trend Chart
-(function(){
-  const daily   = {{ daily_data | tojson }};
-  const forecast = {{ forecast | tojson }};
-  if (!daily.length) return;
+// ══════════════════════════════════════════════════════════
+//  KPI CARDS
+// ══════════════════════════════════════════════════════════
+async function loadKPIs() {
+  const res  = await afetch(`/analytics/kpis?start=${startDate}&end=${endDate}`);
+  const data = await res.json();
 
-  const allDays     = [...daily, ...forecast];
-  const labels      = allDays.map(d => d.day);
-  const revenues    = daily.map(d => d.revenue);
-  const profits     = daily.map(d => d.profit);
-  const forecastRev = forecast.map(d => d.revenue);
+  const trend      = data.trend || 0;
+  const trendIcon  = trend > 0 ? '↑' : trend < 0 ? '↓' : '→';
+  const trendClass = trend > 0 ? 'trend-up' : trend < 0 ? 'trend-down' : 'trend-flat';
+  const trendTxt   = trend !== 0
+    ? `${trendIcon} ${fmtCurrency(Math.abs(trend))} vs yesterday`
+    : '→ Same as yesterday';
 
-  // Pad actual data with nulls for forecast period
-  const revPadded  = [...revenues,  ...Array(forecast.length).fill(null)];
-  const profPadded = [...profits,   ...Array(forecast.length).fill(null)];
-  const forecastPadded = [...Array(daily.length).fill(null), ...forecastRev];
+  const stockClass  = (data.low_stock_count || 0) > 5  ? '#ef4444'
+                    : (data.low_stock_count || 0) > 0  ? '#8b5cf6'
+                    : '#22c55e';
+  const depletColor = (data.depletion_count || 0) > 0  ? '#f97316' : '#22c55e';
 
-  new Chart(document.getElementById('trendChart'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi-card" style="--kpi-accent:#22c55e;">
+      <span class="kpi-icon">💰</span>
+      <div class="kpi-label">Period Revenue</div>
+      <div class="kpi-value">${fmtCurrency(data.revenue || 0)}</div>
+      <div class="kpi-trend ${trendClass}">${trendTxt}</div>
+    </div>
+
+    <div class="kpi-card" style="--kpi-accent:#10b981;">
+      <span class="kpi-icon">📈</span>
+      <div class="kpi-label">Total Profit</div>
+      <div class="kpi-value">${fmtCurrency(data.total_profit || 0)}</div>
+      <div class="kpi-sub">Gross margin ${data.margin_percent || 0}%</div>
+    </div>
+
+    <div class="kpi-card" style="--kpi-accent:#3b82f6;">
+      <span class="kpi-icon">🛒</span>
+      <div class="kpi-label">Avg Order Value</div>
+      <div class="kpi-value">${fmtCurrency(data.avg_order_value || 0)}</div>
+      <div class="kpi-sub">${data.total_orders || 0} orders total</div>
+    </div>
+
+    <div class="kpi-card" style="--kpi-accent:#8b5cf6;">
+      <span class="kpi-icon">📦</span>
+      <div class="kpi-label">Total Orders</div>
+      <div class="kpi-value">${data.total_orders || 0}</div>
+      <div class="kpi-sub">in selected period</div>
+    </div>
+
+    <div class="kpi-card" style="--kpi-accent:${stockClass};">
+      <span class="kpi-icon">⚠️</span>
+      <div class="kpi-label">Low Stock Items</div>
+      <div class="kpi-value">${data.low_stock_count || 0}</div>
+      <div class="kpi-trend ${(data.low_stock_count || 0) > 0 ? 'trend-down' : 'trend-up'}">
+        ${(data.low_stock_count || 0) > 0 ? 'Need restocking soon' : 'All stock healthy ✓'}
+      </div>
+    </div>
+
+    <div class="kpi-card" style="--kpi-accent:${depletColor};">
+      <span class="kpi-icon">⏳</span>
+      <div class="kpi-label">Depletion Alerts</div>
+      <div class="kpi-value">${data.depletion_count || 0}</div>
+      <div class="kpi-sub">Running out &lt; 30 days</div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════
+//  REVENUE + PROFIT TREND CHART
+//  Auto-switches between bar (sparse data) and line (dense)
+//  Uses in-place chart.update() when chart type hasn't changed
+// ══════════════════════════════════════════════════════════
+async function loadTrendChart() {
+  console.count("loadTrendChart");
+  const res  = await afetch(`/analytics/revenue-trend?start=${startDate}&end=${endDate}`);
+  const data = await res.json();
+
+  const current  = data.current  || [];
+  const previous = data.previous || [];
+  const forecast = data.forecast || [];
+
+  // ── Detect sparse data ────────────────────────────────────
+  // If more than 60% of days have zero/no revenue, use bar chart.
+  // Lines connecting isolated spikes look terrible with sparse data.
+  const nonZeroDays  = current.filter(r => (r.amount || 0) > 0).length;
+  const sparsityRate = current.length > 0 ? nonZeroDays / current.length : 1;
+  const isSparse     = sparsityRate < 0.4; // fewer than 40% of days have sales
+  const chartType    = isSparse ? 'bar' : 'line';
+  // ─────────────────────────────────────────────────────────
+
+  const allDays = [...current, ...forecast];
+  const labels  = allDays.map(r => (r.date || r.day || '').slice(5));
+
+  const revCurrent  = current.map(r => r.amount  || 0);
+  const profCurrent = current.map(r => r.profit  || 0);
+  const prevData    = previous.map(r => r.amount || 0);
+  const forecastRev = forecast.map(r => r.revenue ?? r.amount ?? 0);
+
+  const revPadded      = [...revCurrent,  ...Array(forecast.length).fill(null)];
+  const profPadded     = [...profCurrent, ...Array(forecast.length).fill(null)];
+  const prevPadded     = [...prevData,    ...Array(forecast.length).fill(null)];
+  const forecastPadded = [...Array(current.length).fill(null), ...forecastRev];
+
+  // ── Y-axis max: always use actual max + 20% headroom ─────
+  const allVals  = [...revCurrent, ...forecastRev].filter(v => v > 0);
+  const dataMax  = allVals.length ? Math.max(...allVals) : 0;
+  const yMax     = dataMax > 0 ? Math.ceil(dataMax * 1.20 / 1000) * 1000 : undefined;
+  // ─────────────────────────────────────────────────────────
+
+  // If chart type changed (sparse↔dense), must destroy and recreate
+  if (trendChart && trendChart.config.type !== chartType) {
+    trendChart.destroy();
+    trendChart = null;
+  }
+
+  if (trendChart) {
+    trendChart.data.labels           = labels;
+    trendChart.data.datasets[0].data = revPadded;
+    trendChart.data.datasets[1].data = profPadded;
+    if (!isSparse) {
+      trendChart.data.datasets[2].data = prevPadded;
+      trendChart.data.datasets[3].data = forecastPadded;
+    }
+    trendChart.options.scales.y.max = yMax;
+    trendChart.update('none');
+    return;
+  }
+
+  // ── Shared dataset configs ────────────────────────────────
+  const revDataset = isSparse ? {
+    label: 'Revenue',
+    data: revPadded,
+    backgroundColor: 'rgba(245,158,11,0.75)',
+    borderColor: '#f59e0b',
+    borderWidth: 1,
+    borderRadius: 4,
+    borderSkipped: false,
+  } : {
+    label: 'Revenue',
+    data: revPadded,
+    borderColor: '#f59e0b',
+    backgroundColor: 'rgba(245,158,11,0.08)',
+    fill: true, tension: 0.4, borderWidth: 2.5,
+    pointRadius: 3, pointHoverRadius: 6,
+  };
+
+  const profDataset = isSparse ? {
+    label: 'Profit',
+    data: profPadded,
+    backgroundColor: 'rgba(16,185,129,0.65)',
+    borderColor: '#10b981',
+    borderWidth: 1,
+    borderRadius: 4,
+    borderSkipped: false,
+  } : {
+    label: 'Profit',
+    data: profPadded,
+    borderColor: '#10b981',
+    backgroundColor: 'rgba(16,185,129,0.07)',
+    fill: true, tension: 0.4, borderWidth: 2,
+    pointRadius: 3,
+  };
+
+  const datasets = isSparse
+    ? [revDataset, profDataset]  // bar: skip previous/forecast overlays (too messy)
+    : [
+        revDataset,
+        profDataset,
         {
-          label: 'Revenue',
-          data: revPadded,
-          borderColor: '#f59e0b',
-          backgroundColor: 'rgba(245,158,11,0.1)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 3,
-        },
-        {
-          label: 'Profit',
-          data: profPadded,
-          borderColor: '#10b981',
-          backgroundColor: 'rgba(16,185,129,0.08)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 3,
+          label: 'Previous Period',
+          data: prevPadded,
+          borderColor: '#cbd5e1',
+          backgroundColor: 'transparent',
+          borderDash: [5,4], fill: false, tension: 0.35,
+          borderWidth: 1.5, pointRadius: 0,
         },
         {
           label: 'Forecast (7d)',
           data: forecastPadded,
           borderColor: '#3b82f6',
-          borderDash: [6, 4],
           backgroundColor: 'rgba(59,130,246,0.06)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 3,
-          pointStyle: 'triangle',
+          borderDash: [6,4], fill: true, tension: 0.4,
+          borderWidth: 2, pointRadius: 3, pointStyle: 'triangle',
         }
-      ]
-    },
+      ];
+
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: chartType,
+    data: { labels, datasets },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position: 'top' },
+        legend: { position: 'top', labels: { font:{size:11}, boxWidth:16 } },
         tooltip: {
           callbacks: {
-            label: ctx => ' ₹' + (ctx.parsed.y || 0).toLocaleString('en-IN')
+            label: ctx => {
+              const v = ctx.parsed.y;
+              if (v == null || v === 0) return null;
+              return ' ' + fmtCurrency(v);
+            }
           }
         }
       },
       scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font:{size:10}, maxTicksLimit: 12 },
+          ...(isSparse ? { stacked: false } : {}),
+        },
         y: {
+          grid: { color:'#f1f5f9' },
           beginAtZero: true,
-          ticks: {
-            callback: val => '₹' + val.toLocaleString('en-IN')
-          }
+          max: yMax,
+          ticks: { font:{size:10}, callback: v => '₹'+(v>=1000?(v/1000).toFixed(0)+'k':v) }
         }
       }
     }
   });
-})();
+}
+
+// ══════════════════════════════════════════════════════════
+//  CATEGORY DOUGHNUT
+//  Uses in-place chart.update() instead of destroy+recreate
+// ══════════════════════════════════════════════════════════
+async function loadCategoryChart() {
+  const res  = await afetch(`/analytics/category-revenue?start=${startDate}&end=${endDate}`);
+  const data = await res.json();  // [{category, revenue}, ...]
+
+  const COLORS = [
+    '#1a2340','#f59e0b','#3b82f6','#10b981',
+    '#8b5cf6','#ef4444','#06b6d4','#f97316','#84cc16','#ec4899'
+  ];
+
+  if (categoryChart) {
+    // Update in-place
+    categoryChart.data.labels              = data.map(r => r.category || 'Other');
+    categoryChart.data.datasets[0].data    = data.map(r => r.revenue);
+    categoryChart.data.datasets[0].backgroundColor = COLORS.slice(0, data.length);
+    categoryChart.update('none');
+    return;
+  }
+
+  categoryChart = new Chart(document.getElementById('catChart'), {
+    type: 'doughnut',
+    data: {
+      labels: data.map(r => r.category || 'Other'),
+      datasets: [{
+        data: data.map(r => r.revenue),
+        backgroundColor: COLORS.slice(0, data.length),
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font:{size:11}, boxWidth:14, padding:12 } },
+        tooltip: { callbacks: { label: ctx => ' ' + fmtCurrency(ctx.parsed) } }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  TOP SELLERS
+// ══════════════════════════════════════════════════════════
+async function loadTopSellers() {
+  const res  = await afetch(`/analytics/top-sellers?start=${startDate}&end=${endDate}`);
+  const data = await res.json();  // [{product_name, category, units, revenue}, ...]
+
+  const maxRev = Math.max(...data.map(r => r.revenue), 1);
+  const total  = data.reduce((s, r) => s + r.revenue, 0);
+
+  const rows = data.map((r, i) => {
+    const rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
+    const rankLabel = i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
+    const pct   = ((r.revenue / maxRev) * 100).toFixed(0);
+    const share = ((r.revenue / total)  * 100).toFixed(1);
+    return `<tr>
+      <td><span class="rank-badge ${rankClass}">${rankLabel}</span></td>
+      <td style="font-weight:500;color:#0f172a;">${r.product_name}</td>
+      <td><span class="badge badge-neutral">${r.category || '—'}</span></td>
+      <td>${r.units}</td>
+      <td style="font-weight:600;">${fmtCurrency(r.revenue)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <div class="mini-bar-wrap"><div class="mini-bar" style="width:${pct}%"></div></div>
+          <span style="font-size:0.75rem;color:#64748b;">${share}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('sellers-tbody').innerHTML =
+    rows || '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;">No data for this period</td></tr>';
+}
+
+// ══════════════════════════════════════════════════════════
+//  DEAD STOCK
+// ══════════════════════════════════════════════════════════
+async function loadDeadStock() {
+  const res  = await afetch(`/analytics/dead-stock?start=${startDate}&end=${endDate}`);
+  const data = await res.json();
+
+  const rows = data.map(r => `<tr>
+    <td style="font-weight:500;color:#0f172a;">${r.product_name}</td>
+    <td><span class="badge badge-neutral">${r.category || '—'}</span></td>
+    <td>${r.stock}</td>
+    <td>₹${ (r.stock * (r.price || 0)).toLocaleString('en-IN', {maximumFractionDigits:0}) }</td>
+    <td><span class="badge badge-danger">Not Sold</span></td>
+  </tr>`).join('');
+
+  document.getElementById('dead-tbody').innerHTML =
+    rows || '<tr><td colspan="5" style="text-align:center;color:#22c55e;padding:2rem;">✓ All products sold in this period</td></tr>';
+}
+
+// ══════════════════════════════════════════════════════════
+//  ORCHESTRATE  —  debounced + cancellable + error-safe
+// ══════════════════════════════════════════════════════════
+function debouncedLoad() {
+  clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(loadDynamic, 300);
+}
+
+async function loadDynamic() {
+  // Cancel any in-flight requests from a previous load
+  if (_abortController) _abortController.abort();
+  _abortController = new AbortController();
+
+  try {
+    // Run all 5 fetches in parallel but as a single controlled batch
+    await Promise.all([
+      loadKPIs(),
+      loadTrendChart(),
+      loadCategoryChart(),
+      loadTopSellers(),
+      loadDeadStock(),
+    ]);
+  } catch (err) {
+    if (err.name === 'AbortError') return; // Silently ignore cancelled requests
+
+    // Show user-friendly error in KPI area without crashing the page
+    const grid = document.getElementById('kpi-grid');
+    if (grid && grid.querySelector('.skeleton')) {
+      grid.innerHTML = `<div style="grid-column:1/-1;padding:1.5rem;color:#ef4444;font-size:0.85rem;">
+        ⚠️ Failed to load analytics data. Please refresh the page.
+      </div>`;
+    }
+    console.error('[Analytics] Load error:', err);
+  }
+}
+
+loadDynamic();
 </script>
 {% endblock %}

@@ -11,6 +11,85 @@ from sqlalchemy import func, desc, asc
 from datetime import date, timedelta
 
 analytics_bp = Blueprint('analytics', __name__)
+@analytics_bp.route('/category-revenue')
+def category_revenue():
+    end_str   = request.args.get('end',   str(date.today()))
+    start_str = request.args.get('start', str(date.today() - timedelta(days=30)))
+    end_date   = date.fromisoformat(end_str)
+    start_date = date.fromisoformat(start_str)
+
+    rows = db.session.query(
+        Product.category,
+        func.sum(OrderItem.quantity * Product.price).label('revenue')
+    ).join(OrderItem, OrderItem.product_id == Product.product_id) \
+     .join(Order, Order.order_id == OrderItem.order_id) \
+     .filter(
+         func.date(Order.order_date) >= start_date,
+         func.date(Order.order_date) <= end_date
+     ).group_by(Product.category) \
+      .order_by(desc('revenue')).all()
+
+    return jsonify([
+        {"category": r.category, "revenue": float(r.revenue)}
+        for r in rows
+    ])
+@analytics_bp.route('/top-sellers')
+def top_sellers():
+    end_str   = request.args.get('end',   str(date.today()))
+    start_str = request.args.get('start', str(date.today() - timedelta(days=30)))
+    end_date   = date.fromisoformat(end_str)
+    start_date = date.fromisoformat(start_str)
+
+    rows = db.session.query(
+        Product.product_name,
+        Product.category,
+        func.sum(OrderItem.quantity).label('units'),
+        func.sum(OrderItem.quantity * Product.price).label('revenue')
+    ).join(OrderItem, OrderItem.product_id == Product.product_id) \
+     .join(Order, Order.order_id == OrderItem.order_id) \
+     .filter(
+         func.date(Order.order_date) >= start_date,
+         func.date(Order.order_date) <= end_date
+     ).group_by(Product.product_id, Product.product_name, Product.category) \
+      .order_by(desc('revenue')).limit(10).all()
+
+    return jsonify([
+        {
+            "product_name": r.product_name,
+            "category":     r.category,
+            "units":        int(r.units),
+            "revenue":      float(r.revenue)
+        }
+        for r in rows
+    ])
+@analytics_bp.route('/dead-stock')
+def dead_stock():
+    end_str   = request.args.get('end',   str(date.today()))
+    start_str = request.args.get('start', str(date.today() - timedelta(days=30)))
+    end_date   = date.fromisoformat(end_str)
+    start_date = date.fromisoformat(start_str)
+
+    # Products that had at least 1 sale in period
+    sold_ids = db.session.query(OrderItem.product_id).distinct() \
+        .join(Order, Order.order_id == OrderItem.order_id) \
+        .filter(
+            func.date(Order.order_date) >= start_date,
+            func.date(Order.order_date) <= end_date
+        ).subquery()
+
+    # Products NOT in that list
+    dead = Product.query.filter(
+        Product.product_id.notin_(db.session.query(sold_ids))
+    ).order_by(Product.stock.desc()).all()
+
+    return jsonify([
+        {
+            "product_name": p.product_name,
+            "category":     p.category,
+            "stock":        p.stock
+        }
+        for p in dead
+    ])
 
 
 def _top_selling(limit=10, days=30):
@@ -467,8 +546,10 @@ def kpis():
         func.date(Order.order_date) <= end_date
     ).scalar()
 
-    # --- Low stock count (products with stock < 10) ---
-    low_stock_count = Product.query.filter(Product.stock < 10).count()
+    # --- Low stock count (using reorder level) ---
+    low_stock_count = Product.query.filter(
+        Product.stock <= Product.reorder_level
+    ).count()
 
     # --- Yesterday's revenue (for trend arrow) ---
     yesterday = date.today() - timedelta(days=1)
