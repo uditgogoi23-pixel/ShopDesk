@@ -55,20 +55,38 @@ def index():
     inventory_value = sum(
     float(p.stock) * float(p.price or 0)
     for p in products
-    )
+)
+    
+    categories = [
+            c[0] for c in db.session.query(Product.category)
+            .distinct()
+            .order_by(Product.category)
+            .all()
+        ]
+
     return render_template(
-        'products/index.html',
-        products=products,
-        low_stock=low_stock,
-        categories=CATEGORIES,
-        inventory_value=inventory_value,
-        search=search,
-        selected_category=category,
-        sort=sort,
-        low_stock_count=len(low_stock),
+            'products/index.html',
+            products=products,
+            low_stock=low_stock,
+            categories=categories,
+            inventory_value=inventory_value,
+            search=search,
+            selected_category=category,
+            sort=sort,
+            low_stock_count=len(low_stock),
+        )
+
+@products_bp.route("/low-stock")
+def low_stock():
+
+    products = Product.query.filter(
+        Product.stock <= Product.reorder_level
+    ).order_by(Product.stock.asc()).all()
+    
+    return render_template(
+        "products/low_stock.html",
+        products=products
     )
-
-
 # ─── ADD PRODUCT ──────────────────────────────────────────────────────────────
 @products_bp.route('/add', methods=['GET', 'POST'])
 def add():

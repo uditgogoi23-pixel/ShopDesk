@@ -29,18 +29,29 @@
 
     <nav class="sidebar-nav">
 
-      <div class="nav-section-label">CORE</div>
+     <div class="nav-section-label">HOME</div>
 
       <a href="{{ url_for('dashboard.index') }}"
-         class="nav-item {% if request.blueprint == 'dashboard' %}active{% endif %}">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        Dashboard
+        class="nav-item {% if request.blueprint == 'dashboard' %}active{% endif %}">
+          <svg viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/>
+              <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          Dashboard
       </a>
 
+      <div class="nav-section-label">SALES</div>
+
       <a href="{{ url_for('sales.index') }}"
-         class="nav-item {% if request.blueprint == 'sales' %}active{% endif %}">
-        <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-        New Sale / POS
+        class="nav-item {% if request.blueprint == 'sales' %}active{% endif %}">
+          <svg viewBox="0 0 24 24">
+              <circle cx="9" cy="21" r="1"/>
+              <circle cx="20" cy="21" r="1"/>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          New Sale / Point of Sale
       </a>
 
       <div class="nav-section-label">INVENTORY</div>
@@ -48,7 +59,7 @@
       <a href="{{ url_for('products.index') }}"
          class="nav-item {% if request.blueprint == 'products' %}active{% endif %}">
         <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-        Products
+        Inventory
       </a>
 
       <a href="{{ url_for('products.add') }}"
@@ -60,15 +71,29 @@
       <!-- Stock-In: links to imports blueprint if available, otherwise products -->
       <a href="{{ url_for('stock.index') }}"
           class="nav-item {% if request.blueprint == 'stock' %}active{% endif %}">
-            <svg viewBox="0 0 24 24">
-                <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
-                <path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"/>
-            </svg>
-            Stock-In
-        </a>
+          <svg viewBox="0 0 24 24">
+              <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+              <path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"/>
+          </svg>
+          Stock-In
+      </a>
 
-      <!-- Suppliers: only show if blueprint is registered -->
       
+      <a href="{{ url_for('products.low_stock') }}"
+          class="nav-item {% if request.endpoint == 'products.low_stock' %}active{% endif %}">
+
+            <svg viewBox="0 0 24 24">
+                <path d="M12 9v4"/>
+                <path d="M12 17h.01"/>
+                <path d="M10.29 3.86L1.82 18A2 2 0 0 0 3.55 21h16.9a2 2 0 0 0 1.73-3l-8.47-14.14a2 2 0 0 0-3.42 0z"/>
+            </svg>
+
+            <span>Low Stock</span>
+
+            {% if low_stock_count > 0 %}
+                <span class="nav-badge">{{ low_stock_count }}</span>
+            {% endif %}
+        </a>
       <a href="{{ url_for('suppliers.suppliers') }}"
         class="nav-item {% if request.blueprint == 'suppliers' %}active{% endif %}">
           <svg viewBox="0 0 24 24">
@@ -83,15 +108,7 @@
 
       <!-- Export: only show if blueprint is registered -->
       
-      <a href="{{ url_for('export.index') }}"
-        class="nav-item {% if request.blueprint == 'export' %}active{% endif %}">
-          <svg viewBox="0 0 24 24">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Export
-      </a>
+      
       
 
       <div class="nav-section-label">SALES</div>
@@ -114,13 +131,22 @@
           Customers
       </a>
 
-      <div class="nav-section-label">INSIGHTS</div>
-
+      <div class="nav-section-label">REPORTS</div>
       <a href="{{ url_for('analytics.index') }}"
          class="nav-item {% if request.blueprint == 'analytics' %}active{% endif %}">
         <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         Analytics
       </a>
+      <a href="{{ url_for('export.index') }}"
+        class="nav-item {% if request.blueprint == 'export' %}active{% endif %}">
+          <svg viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Export
+      </a>
+      
 
       <div class="nav-section-label">SETTINGS</div>
 

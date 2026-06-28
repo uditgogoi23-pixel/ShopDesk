@@ -43,25 +43,33 @@
 </div>
 
 <!-- ── FILTER BAR ──────────────────────────────────────────────────────── -->
-<form method="GET" class="filter-bar">
-  <input type="text" name="search" class="form-control" placeholder="Search products…"
-         value="{{ search }}" style="width:220px;">
-  <select name="category" class="form-control">
-    <option value="">All Categories</option>
-    {% for cat in categories %}
-      <option value="{{ cat }}" {{ 'selected' if selected_category == cat }}>{{ cat }}</option>
-    {% endfor %}
-  </select>
-  <select name="sort" class="form-control">
-    <option value="product_name" {{ 'selected' if sort=='product_name' }}>Name A-Z</option>
-    <option value="price_asc"    {{ 'selected' if sort=='price_asc' }}>Price ↑</option>
-    <option value="price_desc"   {{ 'selected' if sort=='price_desc' }}>Price ↓</option>
-    <option value="stock_asc"    {{ 'selected' if sort=='stock_asc' }}>Stock ↑</option>
-    <option value="stock_desc"   {{ 'selected' if sort=='stock_desc' }}>Stock ↓</option>
-  </select>
-  <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-  <a href="{{ url_for('products.index') }}" class="btn btn-outline btn-sm">Reset</a>
-</form>
+<div class="filter-bar">
+
+    <input
+        type="text"
+        id="searchInput"
+        class="form-control"
+        placeholder="Search products..."
+        style="width:250px;">
+
+    <select id="categoryFilter" class="form-control">
+        <option value="">All Categories</option>
+
+        {% for cat in categories %}
+        <option value="{{ cat|trim|lower }}">{{ cat }}</option>
+        {% endfor %}
+
+    </select>
+
+    <select id="sortFilter" class="form-control">
+        <option value="product_name">Name A-Z</option>
+        <option value="price_asc">Price ↑</option>
+        <option value="price_desc">Price ↓</option>
+        <option value="stock_asc">Stock ↑</option>
+        <option value="stock_desc">Stock ↓</option>
+    </select>
+
+</div>
 <div class="stats-grid" style="margin-bottom:20px;">
 
     <div class="stat-card">
@@ -99,7 +107,13 @@
     </thead>
     <tbody>
       {% for p in products %}
-      <tr>
+      <tr
+      
+        data-name="{{ p.product_name|lower|trim }}"
+        data-category="{{ p.category|lower|trim if p.category else '' }}"
+        data-price="{{ p.price }}"
+        data-stock="{{ p.stock }}">
+       
         <td class="text-muted mono">#{{ p.product_id }}</td>
 
 <td>
@@ -169,5 +183,76 @@
     </div>
   </div>
 {% endif %}
+<script>
+let searchTimer;
+
+function submitSearch() {
+    clearTimeout(searchTimer);
+
+    searchTimer = setTimeout(function () {
+        document.getElementById("filterForm").submit();
+    }, 500);
+}
+</script>
+
+<script>
+const searchInput = document.getElementById("searchInput");
+const categoryFilter = document.getElementById("categoryFilter");
+const sortFilter = document.getElementById("sortFilter");
+const tbody = document.querySelector("tbody");
+
+function updateTable() {
+
+    let rows = [...tbody.querySelectorAll("tr")];
+
+    const search = searchInput.value.toLowerCase();
+    const category = categoryFilter.value.trim().toLowerCase();
+    const sort = sortFilter.value;
+  rows.forEach(row => {
+
+    const name = (row.dataset.name || "").toLowerCase();
+    const cat = (row.dataset.category || "").toLowerCase();
+
+    const visible = (
+      name.includes(search) ||
+      cat.includes(search)
+    ) && (category === "" || cat === category);
+
+    row.style.display = visible ? "" : "none";
+  });
+    rows.sort((a, b) => {
+
+        switch (sort) {
+
+            case "product_name":
+                return a.dataset.name.localeCompare(b.dataset.name);
+
+            case "price_asc":
+                return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+
+            case "price_desc":
+                return parseFloat(b.dataset.price) - parseFloat(a.dataset.price);
+
+            case "stock_asc":
+                return parseFloat(a.dataset.stock) - parseFloat(b.dataset.stock);
+
+            case "stock_desc":
+                return parseFloat(b.dataset.stock) - parseFloat(a.dataset.stock);
+
+            default:
+                return 0;
+
+        }
+
+    });
+
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+    searchInput.addEventListener("input", updateTable);
+    categoryFilter.addEventListener("change", updateTable);
+    sortFilter.addEventListener("change", updateTable);
+    </script>
+
 
 {% endblock %}

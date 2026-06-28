@@ -696,7 +696,7 @@ function updateStepperUnitLabel() {
 
     const modalLabel = document.getElementById('modalUnitLabel');
     if (modalLabel) {
-        modalLabel.textContent = modal.active_unit;
+        modalLabel.textContent = modal.unit_type;
     }
 }
 function changeQty(direction) {
@@ -755,7 +755,11 @@ function convertToBase(qty, selectedUnit, baseUnit){
 function updateLineTotal(){
 
     const qty = parseFloat(document.getElementById("qtyInput").value) || 0;
-
+    console.log({
+        qty,
+        activeUnit: modal.active_unit,
+        baseUnit: modal.unit_type
+    });
     const baseQty = convertToBase(
         qty,
         modal.active_unit,
@@ -801,16 +805,23 @@ const qty = convertToBase(
       alert(`Total would exceed available stock (${modal.stock} ${unit_type}).`);
       return;
     }
-    cart[id].qty       = newQty;
-    cart[id].unit_type = unit_type;
+    cart[id].qty = newQty;
+
+    cart[id].display_qty += enteredQty;
+    cart[id].display_unit = modal.active_unit;
+
   } else {
     cart[id] = {
-      name:      modal.name,
-      price:     modal.price,
-      qty:       parseFloat(qty.toFixed(3)),
-      stock:     modal.stock,
-      unit_type: unit_type,
-    };
+      name: modal.name,
+      price: modal.price,
+      qty: parseFloat(qty.toFixed(3)),
+      stock: modal.stock,
+
+      unit_type: modal.unit_type,
+
+      display_qty: enteredQty,
+      display_unit: modal.active_unit,
+  };
   }
 
   renderCart();
@@ -876,9 +887,7 @@ function renderCart() {
     total += subtotal;
 
     // Display qty: show integer if whole number, else 3dp trimmed
-    const qtyDisplay = (item.qty === Math.floor(item.qty))
-      ? item.qty.toFixed(0)
-      : item.qty.toFixed(3).replace(/0+$/, '');
+    const qtyDisplay = item.display_qty;
 
     items += 1;   // count distinct lines, not total qty
 
@@ -889,12 +898,14 @@ function renderCart() {
             ${item.name}
           </div>
           <div class="cart-item-price">
-            ₹${item.price.toFixed(2)} × ${qtyDisplay} ${item.unit_type}
+            ₹${item.price.toFixed(2)} × ${qtyDisplay} ${item.display_unit}
           </div>
         </div>
         <div class="qty-controls">
           <button class="qty-btn" onclick="changeQty(${id}, -1)">−</button>
-          <span class="qty-display">${qtyDisplay}</span>
+          <span class="qty-display">
+            ${qtyDisplay} ${item.display_unit}
+        </span>
           <button class="qty-btn" onclick="changeQty(${id}, 1)">+</button>
         </div>
         <div class="cart-item-total">₹${subtotal.toFixed(2)}</div>
@@ -1024,7 +1035,7 @@ async function completeSale() {
 let activeCategory = '';
 
 function filterByCategory(cat, btn) {
-  activeCategory = cat;
+    activeCategory = cat.toLowerCase();
   document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   filterProducts();

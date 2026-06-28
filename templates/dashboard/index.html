@@ -110,11 +110,21 @@
     <div class="kpi-sub">SKUs in catalogue</div>
   </div>
 
-  <div class="kpi-card" style="--kpi-accent: #ef4444;">
-    <div class="kpi-label">Low Stock Alerts</div>
-    <div class="kpi-value">{{ low_stock|length }}</div>
-    <div class="kpi-sub">Products with ≤10 units</div>
-  </div>
+  <a href="{{ url_for('products.low_stock') }}"
+      class="kpi-card card-link"
+      style="--kpi-accent:#ef4444; text-decoration:none; color:inherit;">
+
+        <div class="kpi-label">Low Stock Alerts</div>
+
+        <div class="kpi-value" style="color:#ef4444;">
+            {{ low_stock|length }}
+        </div>
+
+        <div class="kpi-sub">
+            Click to view products needing refill
+        </div>
+
+    </a>
 
   <div class="kpi-card" style="--kpi-accent: #8b5cf6;">
     <div class="kpi-label">Inventory Value</div>

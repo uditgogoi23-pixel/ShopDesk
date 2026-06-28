@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Low Stock{% endblock %}
+
+{% block breadcrumb %}
+<strong>Inventory</strong> / Low Stock
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="dashboard-greeting">
+            🚨 Inventory Alert
+        </div>
+
+        <h1 class="dashboard-title">
+            Low Stock Products
+        </h1>
+
+        <p class="dashboard-subtitle">
+            {{ products|length }} product(s) need replenishment.
+        </p>
+    </div>
+</div>
+
+<div class="stats-grid">
+
+    <div class="stat-card">
+        <h3>🚨 LOW STOCK</h3>
+        <p>{{ products|length }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>📦 TOTAL STOCK</h3>
+        <p>{{ products|sum(attribute='stock')|round(2) }}</p>
+    </div>
+
+</div>
+
+<div class="table-card">
+
+    <div class="table-card-header">
+
+        <div>
+
+            <div class="table-card-title">
+                Products Below Reorder Level
+            </div>
+
+            <div class="table-card-subtitle">
+                Click refill to increase stock.
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="table-wrap">
+
+        <table>
+
+            <thead>
+
+            <tr>
+
+                <th>Product</th>
+                <th>Category</th>
+                <th>Stock</th>
+                <th>Reorder Level</th>
+                <th>Action</th>
+
+            </tr>
+
+            </thead>
+
+            <tbody>
+
+            {% for p in products %}
+
+            <tr>
+
+                <td>{{ p.product_name }}</td>
+
+                <td>{{ p.category }}</td>
+
+                <td>
+
+                    <span class="badge badge-danger">
+                        {{ "%.2f"|format(p.stock) }}
+                        {{ p.unit_type }}
+                    </span>
+
+                </td>
+
+                <td>
+
+                    {{ p.reorder_level }}
+                    {{ p.unit_type }}
+
+                </td>
+
+                <td>
+
+                    <a href="{{ url_for('products.refill_stock', product_id=p.product_id) }}"
+                       class="btn btn-sm btn-primary">
+
+                        Refill
+
+                    </a>
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

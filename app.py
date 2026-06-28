@@ -30,6 +30,17 @@ def create_app():
     @app.context_processor
     def inject_globals():
         return {'now': datetime.utcnow()}
+    @app.context_processor
+    def global_sidebar_data():
+        from models import Product
+
+        low_stock_count = Product.query.filter(
+            Product.stock <= Product.reorder_level
+        ).count()
+
+        return {
+            "low_stock_count": low_stock_count
+        }
 
     # ── Register blueprints ───────────────────────────────────────────────
     from routes.main       import main_bp
@@ -57,7 +68,15 @@ def create_app():
     app.register_blueprint(stock_bp,         url_prefix='/stock')
     app.register_blueprint(purchase_import_bp)
     app.register_blueprint(supplier_import_bp, url_prefix='/supplier-import')
+    from models import Product
 
+    @app.context_processor
+    def inject_sidebar_data():
+        low_stock_count = Product.query.filter(
+            Product.stock <= Product.reorder_level
+        ).count()
+
+        return dict(low_stock_count=low_stock_count)
     # ── Optional blueprints (register only if the route file exists) ──────
     _optional = [
         ('routes.settings', 'settings_bp', '/settings'),

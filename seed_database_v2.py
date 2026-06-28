@@ -80,11 +80,10 @@ CATEGORIES = [
 UNITS = [
     "Units",
     "kg",
-    "g",
     "litre",
-    "ml",
     "pack",
     "piece",
+    "dozen"
 ]
 
 PRODUCT_NAMES = [
