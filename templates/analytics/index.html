@@ -849,9 +849,9 @@ async function loadCategoryChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: '62%',
+      cutout: '72%',
       plugins: {
-        legend: { position: 'bottom', labels: { font:{size:11}, boxWidth:14, padding:12 } },
+        legend: { position: 'right', labels: { font:{size:11}, boxWidth:14, padding:12 } },
         tooltip: { callbacks: { label: ctx => ' ' + fmtCurrency(ctx.parsed) } }
       }
     }

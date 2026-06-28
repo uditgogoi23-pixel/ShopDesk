@@ -14,6 +14,7 @@ from extensions import db
 from models import Product, Order, OrderItem, Payment, Customer, BusinessSettings
 from datetime import date
 from utils.unit_converter import convert_to_base
+from decimal import Decimal
 
 sales_bp = Blueprint('sales', __name__)
 
@@ -54,7 +55,11 @@ def get_customer(phone):
 @sales_bp.route('/complete', methods=['POST'])
 def complete_sale():
     data             = request.get_json()
-    discount_percent = float(data.get('discount', 0))
+    discount_type = data.get("discount_type", "none")
+
+    discount_value = float(data.get("discount_value", 0))
+
+    discount_amount = float(data.get("discount_amount", 0))
     phone            = data.get('customer_phone', '').strip()
     customer_name    = data.get('customer_name', '').strip()
     cart             = data.get('cart', [])   # [{product_id, quantity, unit_type}, ...]
@@ -114,8 +119,16 @@ def complete_sale():
             'unit_type': unit_type
         })
 
-    discount       = round(total * (discount_percent / 100), 2)
-    taxable_amount = total - discount
+    if discount_type == "percentage":
+        discount_amount = round(total * (discount_value / 100), 2)
+
+    elif discount_type == "fixed":
+        discount_amount = min(discount_value, total)
+
+    else:
+        discount_amount = 0
+
+    taxable_amount = total - discount_amount
 
     # Read GST from BusinessSettings instead of hardcoding 18%
     settings   = BusinessSettings.query.first()
@@ -128,16 +141,22 @@ def complete_sale():
     try:
         # ── 1. Create Order ───────────────────────────────────────────────────
         order = Order(
-            customer_id  = customer_id,
-            invoice_no   = "TEMP",
-            order_date   = date.today(),
-            total_amount = total,
-            discount     = discount,
-            gst_amount   = gst_amount,
-            grand_total  = grand_total,
-            payment_mode = payment_mode,
-            order_status = 'Completed',
-        )
+        customer_id=customer_id,
+        invoice_no="TEMP",
+        order_date=date.today(),
+
+        total_amount=total,
+
+        discount_type=discount_type,
+        discount_value=discount_value,
+        discount_amount=discount_amount,
+
+        gst_amount=gst_amount,
+        grand_total=grand_total,
+
+        payment_mode=payment_mode,
+        order_status='Completed',
+    )
         db.session.add(order)
         db.session.flush()   # get order_id
         order.invoice_no = f"INV-{order.order_id:05d}"
@@ -162,7 +181,7 @@ def complete_sale():
         )
             
             db.session.add(order_item)
-            prod.stock -= qty # float arithmetic for decimals
+            prod.stock -= Decimal(str(qty))
 
         # ── 3. Record Payment ─────────────────────────────────────────────────
         payment = Payment(

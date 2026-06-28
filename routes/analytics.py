@@ -29,10 +29,27 @@ def category_revenue():
      ).group_by(Product.category) \
       .order_by(desc('revenue')).all()
 
-    return jsonify([
-        {"category": r.category, "revenue": float(r.revenue)}
-        for r in rows
-    ])
+    # Keep only top 8 categories
+    rows = sorted(rows, key=lambda x: float(x.revenue), reverse=True)
+
+    top = rows[:8]
+    others = sum(float(r.revenue) for r in rows[8:])
+
+    result = [
+        {
+            "category": r.category,
+            "revenue": float(r.revenue)
+        }
+        for r in top
+    ]
+
+    if others > 0:
+        result.append({
+            "category": "Others",
+            "revenue": others
+        })
+
+    return jsonify(result)
 @analytics_bp.route('/top-sellers')
 def top_sellers():
     end_str   = request.args.get('end',   str(date.today()))

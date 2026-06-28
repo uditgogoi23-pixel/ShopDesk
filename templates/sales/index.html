@@ -369,10 +369,27 @@
 
       <!-- Discount -->
       <div class="form-group" style="margin-bottom:10px;">
-        <label class="form-label">Discount (%)</label>
-        <input type="number" id="discount" class="form-control"
-               value="0" min="0" max="100">
-      </div>
+
+        <label class="form-label">Discount Type</label>
+
+        <select id="discountType" class="form-control">
+            <option value="none">No Discount</option>
+            <option value="percentage">Percentage (%)</option>
+            <option value="fixed">Fixed Amount (₹)</option>
+        </select>
+
+        <label class="form-label" style="margin-top:10px;">
+            Discount Value
+        </label>
+
+        <input
+            type="number"
+            id="discountValue"
+            class="form-control"
+            value="0"
+            min="0">
+
+    </div>
 
       <button class="btn btn-amber btn-lg" style="width:100%;"
               onclick="completeSale()" id="btnCompleteSale" disabled>
@@ -913,13 +930,36 @@ function renderCart() {
       </div>`;
   }
 
-  container.innerHTML = html;
-  document.getElementById('cartCount').textContent    = ids.length;
-  document.getElementById('cartSubtotal').textContent = '₹' + total.toFixed(2);
-  document.getElementById('cartTotal').textContent    = '₹' + total.toFixed(2);
-  document.getElementById('btnCompleteSale').disabled = false;
+  document.getElementById('cartCount').textContent = ids.length;
+
+const discountType = document.getElementById('discountType').value;
+const discountValue = parseFloat(document.getElementById('discountValue').value) || 0;
+
+let discountAmount = 0;
+
+if (discountType === "percentage") {
+    discountAmount = total * (discountValue / 100);
+}
+else if (discountType === "fixed") {
+    discountAmount = discountValue;
 }
 
+discountAmount = Math.min(discountAmount, total);
+
+const grandTotal = total - discountAmount;
+
+document.getElementById('cartSubtotal').textContent =
+    "₹" + total.toFixed(2);
+
+document.getElementById('cartTotal').textContent =
+    "₹" + grandTotal.toFixed(2);
+
+document.getElementById('btnCompleteSale').disabled = false;
+
+}
+document.getElementById("discountType").addEventListener("change", renderCart);
+
+document.getElementById("discountValue").addEventListener("input", renderCart);
 
 /* ── WALK-IN CUSTOMER TOGGLE ─────────────────────────────────────────────────
 */
@@ -1008,7 +1048,13 @@ async function completeSale() {
       body: JSON.stringify({
         cart:            cartArr,
         payment_mode:    document.getElementById('paymentMode').value,
-        discount:        document.getElementById('discount').value,
+        discount_type: document.getElementById('discountType').value,
+
+        discount_value: parseFloat(document.getElementById('discountValue').value) || 0,
+
+        discount_amount:
+            parseFloat(document.getElementById('cartSubtotal').textContent.replace('₹', '')) -
+            parseFloat(document.getElementById('cartTotal').textContent.replace('₹', '')),
         customer_phone:  walkIn ? '' : phone,
         customer_name:   walkIn ? '' : nameInput.value.trim(),
       }),
