@@ -6,7 +6,7 @@ order value trends, inventory turnover, low stock alerts
 
 from flask import Blueprint, render_template, request, jsonify
 from extensions import db
-from models import Order, OrderItem, Payment, Product, StockEntry
+from models import Order, OrderItem, Payment, Product, StockEntry, Customer
 from sqlalchemy import func, desc, asc
 from datetime import date, timedelta
 
@@ -436,7 +436,106 @@ def index():
         insights=insights
     )
 
+@analytics_bp.route('/kpis')
+def kpis():
+    # Read date range from query params (default: last 30 days)
+    end_str   = request.args.get('end',   str(date.today()))
+    start_str = request.args.get('start', str(date.today() - timedelta(days=30)))
 
+    end_date   = date.fromisoformat(end_str)
+    start_date = date.fromisoformat(start_str)
+
+    # --- Revenue in selected range ---
+    revenue = db.session.query(
+        func.coalesce(func.sum(Payment.amount), 0)
+    ).filter(
+        func.date(Payment.payment_date) >= start_date,
+        func.date(Payment.payment_date) <= end_date
+    ).scalar()
+
+    # --- Average order value ---
+    avg_order = db.session.query(
+        func.coalesce(func.avg(Payment.amount), 0)
+    ).filter(
+        func.date(Payment.payment_date) >= start_date,
+        func.date(Payment.payment_date) <= end_date
+    ).scalar()
+
+    # --- Total orders in range ---
+    total_orders = db.session.query(func.count(Order.order_id)).filter(
+        func.date(Order.order_date) >= start_date,
+        func.date(Order.order_date) <= end_date
+    ).scalar()
+
+    # --- Low stock count (products with stock < 10) ---
+    low_stock_count = Product.query.filter(Product.stock < 10).count()
+
+    # --- Yesterday's revenue (for trend arrow) ---
+    yesterday = date.today() - timedelta(days=1)
+    revenue_yesterday = db.session.query(
+        func.coalesce(func.sum(Payment.amount), 0)
+    ).filter(
+        func.date(Payment.payment_date) == yesterday
+    ).scalar()
+
+    # --- Today's revenue ---
+    revenue_today = db.session.query(
+        func.coalesce(func.sum(Payment.amount), 0)
+    ).filter(
+        func.date(Payment.payment_date) == date.today()
+    ).scalar()
+
+    # Trend: positive = up, negative = down
+    trend = float(revenue_today) - float(revenue_yesterday)
+
+    return jsonify({
+        "revenue":          round(float(revenue), 2),
+        "avg_order_value":  round(float(avg_order), 2),
+        "total_orders":     int(total_orders),
+        "low_stock_count":  int(low_stock_count),
+        "revenue_today":    round(float(revenue_today), 2),
+        "revenue_yesterday":round(float(revenue_yesterday), 2),
+        "trend":            round(trend, 2),   # positive = up today vs yesterday
+    })
+# ─────────────────────────────────────────────
+# NEW ROUTE 2: Daily Revenue Trend
+# GET /analytics/revenue-trend?start=2024-01-01&end=2024-01-31
+# Returns daily totals for the line chart
+# ─────────────────────────────────────────────
+@analytics_bp.route('/revenue-trend')
+def revenue_trend():
+    end_str   = request.args.get('end',   str(date.today()))
+    start_str = request.args.get('start', str(date.today() - timedelta(days=30)))
+
+    end_date   = date.fromisoformat(end_str)
+    start_date = date.fromisoformat(start_str)
+
+    # Current period: daily revenue
+    rows = db.session.query(
+        func.date(Payment.payment_date).label('day'),
+        func.sum(Payment.amount).label('total')
+    ).filter(
+        func.date(Payment.payment_date) >= start_date,
+        func.date(Payment.payment_date) <= end_date
+    ).group_by('day').order_by('day').all()
+
+    # Previous period (same length, shifted back)
+    delta = (end_date - start_date).days
+    prev_end   = start_date - timedelta(days=1)
+    prev_start = prev_end - timedelta(days=delta)
+
+    prev_rows = db.session.query(
+        func.date(Payment.payment_date).label('day'),
+        func.sum(Payment.amount).label('total')
+    ).filter(
+        func.date(Payment.payment_date) >= prev_start,
+        func.date(Payment.payment_date) <= prev_end
+    ).group_by('day').order_by('day').all()
+
+    return jsonify({
+        "current": [{"date": str(r.day), "amount": float(r.total)} for r in rows],
+        "previous": [{"date": str(r.day), "amount": float(r.total)} for r in prev_rows],
+    })
 # ─── API endpoints for charts ─────────────────────────────────────────────────
 @analytics_bp.route('/api/category-revenue')
 def api_cat_rev():
